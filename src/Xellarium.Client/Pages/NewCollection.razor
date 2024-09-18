@@ -1,0 +1,60 @@
+﻿@page "/newcollection"
+@using Xellarium.Shared.DTO
+@using Xellarium.Client.Logics
+@inject IApiLogic ApiLogic
+@inject NavigationManager NavigationManager
+
+<h3>New Collection</h3>
+
+<EditForm Model="newCollection" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label for="name">Name</label>
+        <InputText id="name" class="form-control" @bind-Value="newCollection.Name" />
+    </div>
+
+    <div class="form-group form-check">
+        <InputCheckbox id="isPrivate" class="form-check-input" @bind-Value="newCollection.IsPrivate" />
+        <label class="form-check-label" for="isPrivate">Is Private</label>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Create</button>
+    
+    @if (!string.IsNullOrEmpty(errorMessage))
+    { 
+        <div class="alert alert-danger mt-3" role="alert">
+            @errorMessage
+            </div>
+    }
+</EditForm>
+
+@code {
+    private string errorMessage = string.Empty;
+    
+    private class NewCollectionDto
+    {
+        public string Name { get; set; }
+        public bool IsPrivate { get; set; }
+    }
+    
+    private NewCollectionDto newCollection = new NewCollectionDto();
+
+    private async Task HandleValidSubmit()
+    {
+        var (result, collection) = await ApiLogic.AddCollection(new PostCollectionDTO()
+        {
+            Name = newCollection.Name,
+            IsPrivate = newCollection.IsPrivate
+        });
+        if (result == ResultCode.Ok && collection != null)
+        {
+            NavigationManager.NavigateTo($"/collection/{collection.Id}");
+        }
+        else
+        {
+            errorMessage = "Failed to create collection";
+        }
+    }
+}

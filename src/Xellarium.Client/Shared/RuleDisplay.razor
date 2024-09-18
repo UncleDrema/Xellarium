@@ -1,0 +1,85 @@
+﻿@if (Rule is not null)
+{
+    <div class="card">
+        <div class="card-body">
+            <h3 class="card-title">@Rule.Name</h3>
+            <p class="card-text">
+                <strong>Contained in Collections:</strong> @Rule.Collections.Count <br>
+                <strong>Type of Neighborhood:</strong> @Rule.NeighborhoodId <br>
+                <strong>State count:</strong> @Rule.GenericRule.StatesCount <br>
+                <strong>Transitions:</strong>
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th scope="col">From State</th>
+                        <th scope="col">Transitions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @for (var index = 0; index < Rule.GenericRule.StateTransitions.Length; index++)
+                    {
+                        var transition = Rule.GenericRule.StateTransitions[index];
+                        <tr>
+                            <th scope="row" class="border-bottom-0">@(index + 1)</th>
+                            @if (transition.Count == 0)
+                            {
+                                <td>No transitions</td>
+                            }
+                            else
+                            {
+                                <table class="table table-hover">
+                                    <thead>
+                                    <tr>
+                                        <th scope="col">To State</th>
+                                        <th scope="col">Required Neighbours</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    @foreach (var t in transition)
+                                    {
+                                        <tr>
+                                            <th scope="row">@t.TargetState</th>
+                                            @if (t.RequiredNeighbours.Count == 0)
+                                            {
+                                                <td>Always</td>
+                                            }
+                                            else
+                                            {
+                                                <td>
+                                                    <table class="table table-borderless">
+                                                        <thead>
+                                                        <tr>
+                                                            <th scope="col">State</th>
+                                                            <th scope="col">Count</th>
+                                                        </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                        @foreach (var (state, amount) in t.RequiredNeighbours)
+                                                        {
+                                                            <tr>
+                                                                <th scope="row">@state</th>
+                                                                <td>@string.Join(" or ", amount)</td>
+                                                            </tr>
+                                                        }
+                                                        </tbody>
+                                                    </table>
+                                                </td>
+                                            }
+                                        </tr>
+                                    }
+                                    </tbody>
+                                </table>
+                            }
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </p>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public RuleDTO? Rule { get; set; }
+}

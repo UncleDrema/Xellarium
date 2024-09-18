@@ -1,0 +1,39 @@
+﻿@page "/public_collections"
+@inject IApiLogic ApiLogic
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger mt-3" role="alert">
+        @errorMessage
+    </div>
+}
+else if (collections == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <PageTitle>Public Collections</PageTitle>
+    <h4>Public Collections</h4>
+    <CollectionList Collections="collections" ShowIsPrivate="false"/>
+}
+
+@code {
+    public string errorMessage = string.Empty;
+    
+    public CollectionDTO[]? collections;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        var (resultCode, colls) = await ApiLogic.GetPublicCollections();
+        if (resultCode == ResultCode.Ok && colls != null)
+        {
+            collections = colls.ToArray();
+            errorMessage = string.Empty;
+        }
+        else
+        {
+            errorMessage = "Failed to get public collections";
+        }
+    }
+}

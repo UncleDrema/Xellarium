@@ -1,0 +1,45 @@
+﻿@page "/rule/{RuleId}"
+@using Xellarium.Shared.DTO
+@using Xellarium.Client.Logics
+@using Xellarium.Shared
+@inject NavigationManager NavigationManager
+@inject IApiLogic ApiLogic
+
+@if (displayRule == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <PageTitle>@displayRule.Name</PageTitle>
+    <RuleDisplay Rule="displayRule"/>
+    <CellularWorld Rule="displayRule"/>
+}
+
+@code {
+    [Parameter]
+    public string RuleId { get; set; }
+
+    private RuleDTO? displayRule;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!int.TryParse(RuleId, out var ruleId))
+        {
+            NavigationManager.NavigateTo("/");
+        }
+        var (result, user) = await ApiLogic.GetProfile();
+        if (result == ResultCode.Ok)
+        {
+            var rule = await ApiLogic.GetRule(user!.Id, ruleId);
+            if (rule != null)
+            {
+                displayRule = rule;
+            }
+            else
+            {
+                NavigationManager.NavigateTo("/");
+            }
+        }
+    }
+}

@@ -1,0 +1,53 @@
+﻿@page "/register"
+
+@inject IApiLogic _apiLogic
+@inject AuthenticationStateProvider _authStateProvider
+@inject NavigationManager _navigationManager
+@inject ILocalStorageService _localStorage
+
+<PageTitle>Register Page</PageTitle>
+
+<div class="row">
+    <div class="col-md-6 offset-md-3">
+        <legend>Register</legend>
+        <div class="mb-3">
+            <label for="txtUsername" class="form-label">Username</label>
+            <input @bind="loginModel.Username" type="text" class="form-control" id="txtUsername" />
+        </div>
+ 
+        <div class="mb-3">
+            <label for="txtPassword" class="form-label">Password</label>
+            <input @bind="loginModel.Password" type="password" class="form-control" id="txtPassword" />
+        </div>
+        <button type="button" @onclick="RegisterUser" class="btn btn-primary">Register</button>
+        @if (!string.IsNullOrEmpty(errorMessage))
+        { 
+            <div class="alert alert-danger mt-3" role="alert">
+                @errorMessage
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private UserLoginDTO loginModel = new UserLoginDTO();
+    private string errorMessage = string.Empty;
+ 
+    private async Task RegisterUser()
+    {
+        var success = await _apiLogic.Register(loginModel);
+        if (success == ResultCode.Ok)
+        {
+            await _localStorage.SetItemAsStringAsync("isauthenticated", "true");
+            _navigationManager.NavigateTo("/",true);
+        }
+        else if (success == ResultCode.Error)
+        {
+            errorMessage = $"User with username {loginModel.Username} already exists";
+        }
+        else
+        {
+            errorMessage = $"Unknown error occurred";
+        }
+    }
+}

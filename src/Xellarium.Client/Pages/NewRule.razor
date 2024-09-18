@@ -1,0 +1,298 @@
+﻿@page "/newrule"
+@using System.ComponentModel.DataAnnotations
+@using Xellarium.Shared
+@inject IApiLogic ApiLogic
+@inject NavigationManager NavigationManager
+<h3>New Rule</h3>
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger mt-3" role="alert">
+        @errorMessage
+    </div>
+    <button class="btn btn-primary" @onclick="() => errorMessage = string.Empty">OK</button>
+}
+else if (Collections == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <EditForm Model="newRule" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="form-group">
+            <label for="name">Name</label>
+            <InputText id="name" class="form-control" @bind-Value="newRule.Name" />
+        </div>
+
+        <div class="form-group">
+            <label for="collection">Collection</label>
+            <InputSelect id="collection" class="form-control" @bind-Value="newRule.CollectionId">
+                @foreach (var collection in Collections)
+                {
+                    <option value="@collection.Id">@collection.Name</option>
+                }
+            </InputSelect>
+        </div>
+        
+        <div class="form-group">
+            <label for="stateCount">State Count</label>
+            <InputNumber id="stateCount" class="form-control" @bind-Value="newRule.StateCount" />
+        </div>
+        
+        <div class="form-group">
+            <label for="neighborhoodType">Neighbourhood Type</label>
+            <InputSelect id="neighborhoodType" class="form-control" @bind-Value="newRule.NeighborhoodId">
+                @foreach (var neighborhood in Neighborhoods)
+                {
+                    <option value="@neighborhood.Id">@neighborhood.Name (@neighborhood.Id)</option>
+                }
+            </InputSelect>
+        </div>
+        <br/>
+        @for (int i = 0; i < newRule.Transitions.Count; i++)
+        {
+            var ind = i;
+            var transition = newRule.Transitions[ind];
+            <div class="form-group">
+                <label>Transition @(ind + 1)</label>
+                <div class="row">
+                    <div class="col-sm">
+                        <label>From</label>
+                        <InputNumber class="form-control" @bind-Value="transition.FromState" min="0" max="@(newRule.StateCount-1)" step="1"/>
+                    </div>
+                    <div class="col-sm">
+                        <label>To</label>
+                        <InputNumber class="form-control" @bind-Value="transition.ToState" min="0" max="@(newRule.StateCount-1)" step="1"/>
+                    </div>
+                    <div class="col-sm">
+                        <div>
+                            <label>Always</label>
+                        </div>
+                        <div>
+                            <InputCheckbox @bind-Value="transition.Always"/>
+                        </div>
+                    </div>
+                    @if (!transition.Always)
+                    {
+                        <div class="col-sm">
+                            <label>Neighbour State</label>
+                            <InputNumber class="form-control" @bind-Value="transition.NeighbourState" min="0" max="@(newRule.StateCount-1)" step="1"/>
+                        </div>
+                        <div class="col-sm">
+                            <label>Count</label>
+                            <InputNumber class="form-control" @bind-Value="transition.Count" min="0" step="1"/>
+                        </div>
+                    }
+                    <button class="col" type="button" @onclick="() => RemoveTransition(ind)">Remove Transition</button>
+                </div>
+            </div>
+            <br/>
+        }
+        
+        <button type="button" @onclick="AddTransition">Add Transition</button>
+        
+        @if (!string.IsNullOrEmpty(formErrorMessage))
+        {
+            <div class="alert alert-danger mt-3" role="alert">
+                @formErrorMessage
+            </div>
+        }
+        
+        <br/><br/>
+        <button type="submit" class="btn btn-primary">Create</button>
+        <button type="button" class="btn btn-primary" @onclick="Preview">Preview</button>
+        <button type="button" class="btn btn-primary" @onclick="HidePreview">Hide Preview</button>
+    </EditForm>
+    
+    <CellularWorld @ref="cellularWorld" Rule="PreviewRule"/>
+}
+
+
+@code {
+    private EditContext editContext;
+    public string errorMessage = string.Empty;
+    public string formErrorMessage = string.Empty;
+    public CollectionDTO[]? Collections;
+    public NeighborhoodDTO[]? Neighborhoods;
+    public RuleDTO? PreviewRule = null;
+    private CellularWorld cellularWorld;
+    
+    private class NewRuleDto
+    {
+        [MinLength(3)]
+        public string Name { get; set; } = "";
+        [IdValidation("Collection")]
+        public int CollectionId { get; set; } = 0;
+        [Range(2, int.MaxValue)]
+        public int StateCount { get; set; } = 2;
+        [IdValidation("Neighborhood")]
+        public int NeighborhoodId { get; set; } = 0;
+        public List<TransitionDto> Transitions { get; set; } = new List<TransitionDto>();
+
+        
+        private class IdValidationAttribute : ValidationAttribute
+        {
+            private readonly string _targetName;
+
+            public IdValidationAttribute(string targetName)
+            {
+                _targetName = targetName;
+            }
+            
+            protected override ValidationResult? IsValid(object value, ValidationContext validationContext)
+            {
+                if (value is int id && id > 0)
+                {
+                    return ValidationResult.Success;
+                }
+                return new ValidationResult($"{_targetName} not selected");
+            }
+        }
+        
+        public class TransitionDto
+        {
+            public int FromState { get; set; }
+            public int ToState { get; set; }
+            public int NeighbourState { get; set; }
+            public int Count { get; set; }
+            public bool Always { get; set; }
+        }
+    }
+    
+    private NewRuleDto newRule = new NewRuleDto();
+
+    protected override async Task OnInitializedAsync()
+    {
+        {
+            var (result, user) = await ApiLogic.GetProfile();
+            if (result == ResultCode.Ok && user != null)
+            {
+                Collections = user.Collections.ToArray();
+            }
+        }
+        {
+            var (result, neighborhoods) = await ApiLogic.GetNeighborhoods();
+            if (result == ResultCode.Ok)
+            {
+                Neighborhoods = neighborhoods;
+            }
+        }
+        editContext = new EditContext(newRule);
+    }
+    
+    private void AddTransition()
+    {
+        newRule.Transitions.Add(new NewRuleDto.TransitionDto());
+    }
+
+    private void RemoveTransition(int index)
+    {
+        newRule.Transitions.RemoveAt(index);
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        var genericRule = BuildGenericRuleOrFail();
+        if (genericRule is not null)
+        {
+            var rule = new PostRuleDTO()
+            {
+                Name = newRule.Name,
+                GenericRule = genericRule,
+                NeighborhoodId = newRule.NeighborhoodId
+            };
+            var (result, _) = await ApiLogic.AddRule(newRule.CollectionId, rule);
+            if (result == ResultCode.Ok)
+            {
+                NavigationManager.NavigateTo($"/collection/{newRule.CollectionId}");
+            }
+            else
+            {
+                errorMessage = "Failed to create rule";
+            }
+        }
+    }
+
+    private GenericRule? BuildGenericRuleOrFail()
+    {
+        try
+        {
+            return BuildGenericRule();
+        }
+        catch (Exception e)
+        {
+            formErrorMessage = $"Wrong rule: {e.Message}";
+            return null;
+        }
+    }
+
+    private GenericRule BuildGenericRule()
+    {
+        var ruleBuilder = new GenericRule.Builder(newRule.StateCount);
+        var transitions = new Dictionary<int, Dictionary<int, Dictionary<int, IList<int>>>>();
+        foreach (var transition in newRule.Transitions)
+        {
+            if (!transitions.ContainsKey(transition.FromState))
+            {
+                transitions[transition.FromState] = new Dictionary<int, Dictionary<int, IList<int>>>();
+            }
+            
+            var fromTransitions = transitions[transition.FromState];
+            if (!fromTransitions.ContainsKey(transition.ToState))
+            {
+                fromTransitions[transition.ToState] = new Dictionary<int, IList<int>>();
+            }
+            var toTransitions = fromTransitions[transition.ToState];
+            if (!toTransitions.ContainsKey(transition.NeighbourState))
+            {
+                toTransitions[transition.NeighbourState] = new List<int>();
+            }
+            toTransitions[transition.NeighbourState].Add(transition.Count);
+        }
+
+        foreach (var transition in newRule.Transitions)
+        {
+            if (transition.Always)
+            {
+                transitions[transition.FromState][transition.ToState] = new Dictionary<int, IList<int>>();
+            }
+        }
+
+        foreach (var (fromState, toTransitions) in transitions)
+        {
+            foreach (var (toState, neighbourCounts) in toTransitions)
+            {
+                ruleBuilder.WithTransition(fromState, toState, neighbourCounts);
+            }
+        }
+
+        return ruleBuilder.Build();
+    }
+
+    private async Task Preview()
+    {
+        if (editContext.Validate())
+        {
+            var genericRule = BuildGenericRuleOrFail();
+            if (genericRule is not null)
+            {
+                PreviewRule = new RuleDTO()
+                {
+                    GenericRule = genericRule,
+                    NeighborhoodId = newRule.NeighborhoodId
+                };
+                await cellularWorld.Render();
+            }
+        }
+    }
+    
+    private async Task HidePreview()
+    {
+        if (editContext.Validate())
+        {
+            PreviewRule = null;
+        }
+    }
+}

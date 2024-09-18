@@ -1,0 +1,45 @@
+﻿@if (Collections.Count == 0)
+{
+    <p>No collections found</p>
+}
+else
+{
+    <table class="table table-striped table-hover">
+        <thead>
+        <tr>
+            <th scope="col">#</th>
+            <th scope="col">Name</th>
+            @if (ShowIsPrivate)
+            {
+                <th scope="col">Is Private</th>
+            }
+            <th scope="col">Link</th>
+        </tr>
+        </thead>
+        <tbody>
+        @for (var index = 0; index < Collections.Count; index++)
+        {
+            var collection = Collections[index];
+            <tr>
+                <th scope="row">@(index + 1)</th>
+                <td>@collection.Name</td>
+                @if (ShowIsPrivate)
+                {
+                    <td>@(collection.IsPrivate ? "Yes" : "No")</td>
+                }
+                <td>
+                    <NavLink href="@($"/collection/{collection.Id}")">Open @collection.Name</NavLink>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    [Parameter]
+    public IList<CollectionDTO> Collections { get; set; }
+
+    [Parameter]
+    public bool ShowIsPrivate { get; set; } = true;
+}

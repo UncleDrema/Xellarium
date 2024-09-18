@@ -1,0 +1,60 @@
+﻿@page "/collection/{CollectionId}"
+@using Xellarium.Shared.DTO
+@using Xellarium.Client.Logics
+@inject IApiLogic ApiLogic
+@inject NavigationManager NavigationManager
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger mt-3" role="alert">
+        @errorMessage
+    </div>
+}
+else if (collection == null || rules == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <PageTitle>@collection.Name</PageTitle>
+    <h3>@collection.Name</h3>
+    <h4>Rules</h4>
+    <RuleList Rules="rules" />
+}
+
+@code {
+    [Parameter]
+    public string CollectionId { get; set; }
+    
+    public string errorMessage = string.Empty;
+    private CollectionDTO? collection;
+    private RuleDTO[]? rules;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!int.TryParse(CollectionId, out var collectionId))
+        {
+            errorMessage = "Invalid collection id";
+            return;
+        }
+        var (result, coll) = await ApiLogic.GetCollection(collectionId);
+        if (result == ResultCode.Ok && coll != null)
+        {
+            collection = coll;
+            var (ruleResult, ruleDtos) = await ApiLogic.GetCollectionRules(collectionId);
+            if (ruleResult == ResultCode.Ok && ruleDtos != null)
+            {
+                rules = ruleDtos.ToArray();
+                errorMessage = string.Empty;
+            }
+            else
+            {
+                errorMessage = "Failed to get collection rules";
+            }
+        }
+        else
+        {
+            errorMessage = "Failed to get collection";
+        }
+    }
+}

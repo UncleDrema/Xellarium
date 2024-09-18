@@ -1,0 +1,58 @@
+﻿@page "/login"
+@inject IApiLogic _apiLogic
+@inject AuthenticationStateProvider _authStateProvider
+@inject NavigationManager _navigationManager
+@inject ILocalStorageService _localStorage
+
+<PageTitle>Login Page</PageTitle>
+
+<div class="row">
+    <div class="col-md-6 offset-md-3">
+        <legend>User Login</legend>
+        <div class="mb-3">
+            <label for="txtUsername" class="form-label">Username</label>
+            <input @bind="loginModel.Username" type="text" class="form-control" id="txtUsername" />
+        </div>
+ 
+        <div class="mb-3">
+            <label for="txtPassword" class="form-label">Password</label>
+            <input @bind="loginModel.Password" type="password" class="form-control" id="txtPassword" />
+        </div>
+        <button type="button" @onclick="UserLogin" class="btn btn-primary">Login</button>
+        <button type="button" @onclick="Register" class="btn btn-link">Register</button>
+        @if (!string.IsNullOrEmpty(errorMessage))
+        { 
+            <div class="alert alert-danger mt-3" role="alert">
+                @errorMessage
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private UserLoginDTO loginModel = new UserLoginDTO();
+    private string errorMessage = string.Empty;
+ 
+    private async Task UserLogin()
+    {
+        var success = await _apiLogic.Login(loginModel);
+        if (success == ResultCode.Ok)
+        {
+            await _localStorage.SetItemAsStringAsync("isauthenticated", "true");
+            _navigationManager.NavigateTo("/",true);
+        }
+        else if (success == ResultCode.Error)
+        {
+            errorMessage = $"User with username {loginModel.Username} already exists";
+        }
+        else if (success == ResultCode.Unauthorized)
+        {
+            errorMessage = $"Invalid username or password";
+        }
+    }
+    
+    private async Task Register()
+    {
+        _navigationManager.NavigateTo("/register", true);
+    }
+}
