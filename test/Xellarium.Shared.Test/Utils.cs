@@ -1,6 +1,4 @@
-﻿using Xellarium.Shared;
-
-namespace Xellarium.BusinessLogic.Test;
+﻿namespace Xellarium.Shared.Test;
 
 public class UtilsTests
 {

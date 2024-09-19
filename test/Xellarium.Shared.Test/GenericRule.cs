@@ -1,7 +1,4 @@
-using Xellarium.BusinessLogic.Models;
-using Xellarium.Shared;
-
-namespace Xellarium.BusinessLogic.Test.Models;
+namespace Xellarium.Shared.Test;
 
 public class GenericRuleTests
 {

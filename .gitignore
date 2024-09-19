@@ -5,6 +5,7 @@ _ReSharper.*
 packages/
 diagrams/
 artifacts/
+allure-report/
 logs/
 *.user
 *.suo

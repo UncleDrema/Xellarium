@@ -17,12 +17,16 @@ public class Collection : BaseModel
     
     public void AddRule(Rule rule)
     {
+        ArgumentNullException.ThrowIfNull(rule);
         Rules.Add(rule);
         rule.Collections.Add(this);
     }
     
     public void RemoveRule(Rule rule)
     {
+        ArgumentNullException.ThrowIfNull(rule);
+        if (!Rules.Contains(rule))
+            throw new InvalidOperationException($"Rule {rule.Name} is not in collection {Name}.");
         Rules.Remove(rule);
         rule.Collections.Remove(this);
     }
