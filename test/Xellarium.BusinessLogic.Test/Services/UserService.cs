@@ -1,39 +1,32 @@
 ﻿using Moq;
 using Xellarium.BusinessLogic.Models;
-using Xellarium.BusinessLogic.Repository;
 using Xellarium.BusinessLogic.Services;
 
 namespace Xellarium.BusinessLogic.Test.Services;
 
-public class UserServiceTests : IDisposable
+public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
 {
-    private readonly Mock<IUserRepository> _userRepositoryMock;
-    private readonly Mock<ICollectionRepository> _collectionRepositoryMock;
-    private readonly Mock<IRuleRepository> _ruleRepositoryMock;
-    private readonly Mock<INeighborhoodRepository> _neighborhoodRepositoryMock;
+    private readonly RepositoryMocks _mocks;
     private readonly UserService _userService;
     
-    public UserServiceTests()
+    public UserServiceTests(RepositoryMocks mocks)
     {
-        _userRepositoryMock = new();
-        _collectionRepositoryMock = new();
-        _ruleRepositoryMock = new();
-        _neighborhoodRepositoryMock = new();
+        _mocks = mocks;
         
-        _userService = new UserService(_userRepositoryMock.Object,
-            _collectionRepositoryMock.Object,
-            _ruleRepositoryMock.Object,
-            _neighborhoodRepositoryMock.Object);
+        _userService = new UserService(_mocks.UserRepositoryMock.Object,
+            _mocks.CollectionRepositoryMock.Object,
+            _mocks.RuleRepositoryMock.Object,
+            _mocks.NeighborhoodRepositoryMock.Object);
     }
     
     [Fact]
-    public async void GetUserById_WhenUserExists_ShouldReturnUser()
+    public async Task GetUserById_WhenUserExists_ShouldReturnUser()
     {
         // Arrange
         var userId = 1;
         var user = new User { Id = userId };
         
-        _userRepositoryMock.Setup(x => x.Get(userId, false)).ReturnsAsync(user);
+        _mocks.UserRepositoryMock.Setup(x => x.Get(userId, false)).ReturnsAsync(user);
         
         // Act
         var result = await _userService.GetUser(userId);
@@ -43,7 +36,7 @@ public class UserServiceTests : IDisposable
     }
     
     [Fact]
-    public async void GetUserById_WhenUserNotExists_ShouldReturnNull()
+    public async Task GetUserById_WhenUserNotExists_ShouldReturnNull()
     {
         // Arrange
         var userId = 1;
@@ -56,104 +49,104 @@ public class UserServiceTests : IDisposable
     }
     
     [Fact]
-    public async void GetUserById_WhenUserDeleted_ShouldReturnNull()
+    public async Task GetUserById_WhenUserDeleted_ShouldReturnNull()
     {
         // Arrange
         var userId = 1;
         var user = new User { Id = userId, IsDeleted = true };
 
-        _userRepositoryMock.Setup(x => x.Add(user, true));
-
+        _mocks.UserRepositoryMock.Setup(x => x.Add(user, true));
+        
         // Act
         await _userService.AddUser(user);
-        var result = await _userService.GetUser(userId);
         
         // Assert
+        var result = await _userService.GetUser(userId);
         Assert.Null(result);
     }
     
     [Fact]
-    public async void AddUser_WhenUserNotExists_ShouldAddUser()
+    public async Task AddUser_WhenUserNotExists_ShouldAddUser()
     {
         // Arrange
         var user = new User { Id = 1 };
         
-        _userRepositoryMock.Setup(x => x.Exists(user.Id, false)).ReturnsAsync(false);
-        _userRepositoryMock.Setup(x => x.Add(user, true));
+        _mocks.UserRepositoryMock.Setup(x => x.Exists(user.Id, false)).ReturnsAsync(false);
+        _mocks.UserRepositoryMock.Setup(x => x.Add(user, true));
         
         // Act
         await _userService.AddUser(user);
         
         // Assert
-        _userRepositoryMock.Verify(x => x.Add(user, true), Times.Once);
+        _mocks.UserRepositoryMock.Verify(x => x.Add(user, true), Times.Once);
     }
     
     [Fact]
-    public async void AddUser_WhenUserExists_ShouldNotAddUser()
+    public async Task AddUser_WhenUserExists_ShouldNotAddUser()
     {
         // Arrange
         var user = new User { Id = 1 };
         
-        _userRepositoryMock.Setup(x => x.Exists(user.Id, false)).ReturnsAsync(true);
+        _mocks.UserRepositoryMock.Setup(x => x.Exists(user.Id, false)).ReturnsAsync(true);
         
         // Act
         await Assert.ThrowsAsync<ArgumentException>(() => _userService.AddUser(user));
         
         // Assert
-        _userRepositoryMock.Verify(x => x.Add(user, true), Times.Never);
+        _mocks.UserRepositoryMock.Verify(x => x.Add(user, true), Times.Never);
     }
     
     [Fact]
-    public async void UpdateUser_WhenUserExists_ShouldUpdateUser()
+    public async Task UpdateUser_WhenUserExists_ShouldUpdateUser()
     {
         // Arrange
         var user = new User { Id = 1 };
         
-        _userRepositoryMock.Setup(x => x.Exists(user.Id, false)).ReturnsAsync(true);
-        _userRepositoryMock.Setup(x => x.Update(user));
+        _mocks.UserRepositoryMock.Setup(x => x.Exists(user.Id, false)).ReturnsAsync(true);
+        _mocks.UserRepositoryMock.Setup(x => x.Update(user));
         
         // Act
         await _userService.UpdateUser(user);
         
         // Assert
-        _userRepositoryMock.Verify(x => x.Update(user), Times.Once);
+        _mocks.UserRepositoryMock.Verify(x => x.Update(user), Times.Once);
     }
     
     [Fact]
-    public async void UpdateUser_WhenUserNotExists_ShouldNotUpdateUser()
+    public async Task UpdateUser_WhenUserNotExists_ShouldNotUpdateUser()
     {
         // Arrange
         var user = new User { Id = 1 };
         
-        _userRepositoryMock.Setup(x => x.Exists(user.Id, false)).ReturnsAsync(false);
+        _mocks.UserRepositoryMock.Setup(x => x.Exists(user.Id, false)).ReturnsAsync(false);
         
         // Act
         await Assert.ThrowsAsync<ArgumentException>(() => _userService.UpdateUser(user));
         
         // Assert
-        _userRepositoryMock.Verify(x => x.Update(user), Times.Never);
+        _mocks.UserRepositoryMock.Verify(x => x.Update(user), Times.Never);
     }
     
     [Fact]
-    public async void DeleteUser_WhenUserExists_ShouldSoftDeleteUser()
+    public async Task DeleteUser_WhenUserExists_ShouldSoftDeleteUser()
     {
         // Arrange
         var userId = 1;
         var user = new User { Id = userId, IsDeleted = false };
         
-        _userRepositoryMock.Setup(x => x.Get(userId, true)).ReturnsAsync(user);
-        _userRepositoryMock.Setup(x => x.SoftDelete(userId));
+        _mocks.UserRepositoryMock.Setup(x => x.Get(userId, true)).ReturnsAsync(user);
+        _mocks.UserRepositoryMock.Setup(x => x.SoftDelete(userId));
         
         // Act
         await _userService.DeleteUser(userId);
         
         // Assert
-        _userRepositoryMock.Verify(x => x.SoftDelete(userId), Times.Once);
-        _userRepositoryMock.Verify(x => x.HardDelete(userId), Times.Never);
+        _mocks.UserRepositoryMock.Verify(x => x.SoftDelete(userId), Times.Once);
+        _mocks.UserRepositoryMock.Verify(x => x.HardDelete(userId), Times.Never);
     }
     
     [Fact]
-    public async void DeleteUser_WhenUserNotExists_ShouldNotDeleteUser()
+    public async Task DeleteUser_WhenUserNotExists_ShouldNotDeleteUser()
     {
         // Arrange
         var userId = 1;
@@ -162,29 +155,29 @@ public class UserServiceTests : IDisposable
         await Assert.ThrowsAsync<ArgumentException>(() => _userService.DeleteUser(userId));
         
         // Assert
-        _userRepositoryMock.Verify(x => x.SoftDelete(userId), Times.Never);
-        _userRepositoryMock.Verify(x => x.HardDelete(userId), Times.Never);
+        _mocks.UserRepositoryMock.Verify(x => x.SoftDelete(userId), Times.Never);
+        _mocks.UserRepositoryMock.Verify(x => x.HardDelete(userId), Times.Never);
     }
     
     [Fact]
-    public async void DeleteUser_WhenUserDeleted_ShouldNotDeleteUser()
+    public async Task DeleteUser_WhenUserDeleted_ShouldNotDeleteUser()
     {
         // Arrange
         var userId = 1;
         var user = new User { Id = userId, IsDeleted = true };
         
-        _userRepositoryMock.Setup(x => x.Get(userId, true)).ReturnsAsync(user);
+        _mocks.UserRepositoryMock.Setup(x => x.Get(userId, true)).ReturnsAsync(user);
         
         // Act
         await Assert.ThrowsAsync<ArgumentException>(() => _userService.DeleteUser(userId));
         
         // Assert
-        _userRepositoryMock.Verify(x => x.SoftDelete(userId), Times.Never);
-        _userRepositoryMock.Verify(x => x.HardDelete(userId), Times.Never);
+        _mocks.UserRepositoryMock.Verify(x => x.SoftDelete(userId), Times.Never);
+        _mocks.UserRepositoryMock.Verify(x => x.HardDelete(userId), Times.Never);
     }
     
     [Fact]
-    public async void DeleteUser_WhenUserDoesNotExists_ShouldNotDeleteUser()
+    public async Task DeleteUser_WhenUserDoesNotExists_ShouldNotDeleteUser()
     {
         // Arrange
         var userId = 1;
@@ -193,18 +186,18 @@ public class UserServiceTests : IDisposable
         await Assert.ThrowsAsync<ArgumentException>(() => _userService.DeleteUser(userId));
         
         // Assert
-        _userRepositoryMock.Verify(x => x.SoftDelete(userId), Times.Never);
-        _userRepositoryMock.Verify(x => x.HardDelete(userId), Times.Never);
+        _mocks.UserRepositoryMock.Verify(x => x.SoftDelete(userId), Times.Never);
+        _mocks.UserRepositoryMock.Verify(x => x.HardDelete(userId), Times.Never);
     }
     
     [Fact]
-    public async void GetUserCollections_WhenUserExists_ShouldReturnUserCollections()
+    public async Task GetUserCollections_WhenUserExists_ShouldReturnUserCollections()
     {
         // Arrange
         var userId = 1;
         var user = new User { Id = userId, Collections = new List<Collection> { new Collection() } };
         
-        _userRepositoryMock.Setup(x => x.Get(userId, false)).ReturnsAsync(user);
+        _mocks.UserRepositoryMock.Setup(x => x.Get(userId, false)).ReturnsAsync(user);
         
         // Act
         var result = await _userService.GetUserCollections(userId);
@@ -214,17 +207,20 @@ public class UserServiceTests : IDisposable
     }
     
     [Fact]
-    public async void GetUserCollections_WhenUserNotExists_ShouldThrowArgumentException()
+    public async Task GetUserCollections_WhenUserNotExists_ShouldThrowArgumentException()
     {
         // Arrange
         var userId = 1;
         
         // Act
-        await Assert.ThrowsAsync<ArgumentException>(() => _userService.GetUserCollections(userId));
+        var action = () => _userService.GetUserCollections(userId);
+        
+        // Assert
+        await Assert.ThrowsAsync<ArgumentException>(action);
     }
     
     [Fact]
-    public async void GetUserRules_WhenUserExists_ShouldReturnUserRules()
+    public async Task GetUserRules_WhenUserExists_ShouldReturnUserRules()
     {
         // Arrange
         var userId = 1;
@@ -242,7 +238,7 @@ public class UserServiceTests : IDisposable
             Rules = new List<Rule>() {rule}
         };
         
-        _userRepositoryMock.Setup(x => x.Get(userId, false)).ReturnsAsync(user);
+        _mocks.UserRepositoryMock.Setup(x => x.Get(userId, false)).ReturnsAsync(user);
         
         // Act
         var result = await _userService.GetUserRules(userId);
@@ -252,7 +248,7 @@ public class UserServiceTests : IDisposable
     }
     
     [Fact]
-    public async void GetUserRule_ReturnsOnlyUniqueRules()
+    public async Task GetUserRule_ReturnsOnlyUniqueRules()
     {
         // Arrange
         var userId = 1;
@@ -274,7 +270,7 @@ public class UserServiceTests : IDisposable
             Rules = new List<Rule>() {rule}
         };
         
-        _userRepositoryMock.Setup(x => x.Get(userId, false)).ReturnsAsync(user);
+        _mocks.UserRepositoryMock.Setup(x => x.Get(userId, false)).ReturnsAsync(user);
         
         // Act
         var result = await _userService.GetUserRules(userId);
@@ -284,7 +280,7 @@ public class UserServiceTests : IDisposable
     }
     
     [Fact]
-    public async void GetUserRules_WhenUserNotExists_ShouldThrowArgumentException()
+    public async Task GetUserRules_WhenUserNotExists_ShouldThrowArgumentException()
     {
         // Arrange
         var userId = 1;
@@ -294,27 +290,27 @@ public class UserServiceTests : IDisposable
     }
     
     [Fact]
-    public async void WarnUser_WhenUserExists_ShouldAddWarning()
+    public async Task WarnUser_WhenUserExists_ShouldAddWarning()
     {
         // Arrange
         var userId = 1;
         var user = new User { Id = userId };
         
-        _userRepositoryMock.Setup(x => x.Get(userId, false)).ReturnsAsync(user);
-        _userRepositoryMock.Setup(x => x.Update(user));
+        _mocks.UserRepositoryMock.Setup(x => x.Get(userId, false)).ReturnsAsync(user);
+        _mocks.UserRepositoryMock.Setup(x => x.Update(user));
         
         // Act
         await _userService.WarnUser(userId);
-        var result = await _userService.GetUser(userId);
         
         // Assert
+        var result = await _userService.GetUser(userId);
         Assert.NotNull(result);
         Assert.Equal(1, result.WarningsCount);
-        _userRepositoryMock.Verify(x => x.Update(user), Times.Once);
+        _mocks.UserRepositoryMock.Verify(x => x.Update(user), Times.Once);
     }
     
     [Fact]
-    public async void WarnUser_WhenUserNotExists_ShouldThrowArgumentException()
+    public async Task WarnUser_WhenUserNotExists_ShouldThrowArgumentException()
     {
         // Arrange
         var userId = 1;
@@ -324,12 +320,12 @@ public class UserServiceTests : IDisposable
     }
     
     [Fact]
-    public async void UserExists_WhenUserExists_ShouldReturnTrue()
+    public async Task UserExists_WhenUserExists_ShouldReturnTrue()
     {
         // Arrange
         var userId = 1;
         
-        _userRepositoryMock.Setup(x => x.Exists(userId, false)).ReturnsAsync(true);
+        _mocks.UserRepositoryMock.Setup(x => x.Exists(userId, false)).ReturnsAsync(true);
         
         // Act
         var result = await _userService.UserExists(userId);
@@ -339,12 +335,12 @@ public class UserServiceTests : IDisposable
     }
     
     [Fact]
-    public async void UserExists_WhenUserNotExists_ShouldReturnFalse()
+    public async Task UserExists_WhenUserNotExists_ShouldReturnFalse()
     {
         // Arrange
         var userId = 1;
         
-        _userRepositoryMock.Setup(x => x.Exists(userId, false)).ReturnsAsync(false);
+        _mocks.UserRepositoryMock.Setup(x => x.Exists(userId, false)).ReturnsAsync(false);
         
         // Act
         var result = await _userService.UserExists(userId);
@@ -354,12 +350,12 @@ public class UserServiceTests : IDisposable
     }
     
     [Fact]
-    public async void UserExists_WhenUserDeleted_ShouldReturnFalse()
+    public async Task UserExists_WhenUserDeleted_ShouldReturnFalse()
     {
         // Arrange
         var userId = 1;
         
-        _userRepositoryMock.Setup(x => x.Exists(userId, false)).ReturnsAsync(false);
+        _mocks.UserRepositoryMock.Setup(x => x.Exists(userId, false)).ReturnsAsync(false);
         
         // Act
         var result = await _userService.UserExists(userId);
@@ -370,12 +366,12 @@ public class UserServiceTests : IDisposable
     
     // test GetUsers(), NameExists(), GetCollection(), AddRule(), RegisterUser(), AuthenticateUser(), HashPassword(), VerifyPassword()
     [Fact]
-    public async void GetUsers_WhenUsersExists_ShouldReturnUsers()
+    public async Task GetUsers_WhenUsersExists_ShouldReturnUsers()
     {
         // Arrange
         var users = new List<User> { new User(), new User() };
         
-        _userRepositoryMock.Setup(x => x.GetAll(false)).ReturnsAsync(users);
+        _mocks.UserRepositoryMock.Setup(x => x.GetAll(false)).ReturnsAsync(users);
         
         // Act
         var result = await _userService.GetUsers();
@@ -385,10 +381,10 @@ public class UserServiceTests : IDisposable
     }
     
     [Fact]
-    public async void GetUsers_WhenUsersNotExists_ShouldReturnEmptyList()
+    public async Task GetUsers_WhenUsersNotExists_ShouldReturnEmptyList()
     {
         // Arrange
-        _userRepositoryMock.Setup(x => x.GetAll(false)).ReturnsAsync(new List<User>());
+        _mocks.UserRepositoryMock.Setup(x => x.GetAll(false)).ReturnsAsync(new List<User>());
         
         // Act
         var result = await _userService.GetUsers();
@@ -398,13 +394,13 @@ public class UserServiceTests : IDisposable
     }
     
     [Fact]
-    public async void NameExists_WhenNameExists_ShouldReturnTrue()
+    public async Task NameExists_WhenNameExists_ShouldReturnTrue()
     {
         // Arrange
         var name = "name";
         var user = new User { Name = name };
         
-        _userRepositoryMock.Setup(x => x.GetByName(name)).ReturnsAsync(user);
+        _mocks.UserRepositoryMock.Setup(x => x.GetByName(name)).ReturnsAsync(user);
         
         // Act
         var result = await _userService.NameExists(name);
@@ -414,7 +410,7 @@ public class UserServiceTests : IDisposable
     }
     
     [Fact]
-    public async void NameExists_WhenNameNotExists_ShouldReturnFalse()
+    public async Task NameExists_WhenNameNotExists_ShouldReturnFalse()
     {
         // Arrange
         var name = "name";
@@ -427,7 +423,7 @@ public class UserServiceTests : IDisposable
     }
     
     [Fact]
-    public async void GetCollection_WhenCollectionExists_ShouldReturnCollection()
+    public async Task GetCollection_WhenCollectionExists_ShouldReturnCollection()
     {
         // Arrange
         var userId = 1;
@@ -436,8 +432,8 @@ public class UserServiceTests : IDisposable
         var user = new User { Id = userId, Collections = new List<Collection> { collection } };
         collection.Owner = user;
         
-        _userRepositoryMock.Setup(x => x.Get(userId, false)).ReturnsAsync(user);
-        _collectionRepositoryMock.Setup(x => x.Get(collectionId, false)).ReturnsAsync(collection);
+        _mocks.UserRepositoryMock.Setup(x => x.Get(userId, false)).ReturnsAsync(user);
+        _mocks.CollectionRepositoryMock.Setup(x => x.Get(collectionId, false)).ReturnsAsync(collection);
         
         // Act
         var result = await _userService.GetCollection(userId, collectionId);
@@ -447,14 +443,14 @@ public class UserServiceTests : IDisposable
     }
     
     [Fact]
-    public async void GetCollection_WhenCollectionNotExists_ShouldReturnNull()
+    public async Task GetCollection_WhenCollectionNotExists_ShouldReturnNull()
     {
         // Arrange
         var userId = 1;
         var collectionId = 1;
         var user = new User { Id = userId, Collections = new List<Collection>() };
         
-        _userRepositoryMock.Setup(x => x.Get(userId, false)).ReturnsAsync(user);
+        _mocks.UserRepositoryMock.Setup(x => x.Get(userId, false)).ReturnsAsync(user);
         
         // Act
         var result = await _userService.GetCollection(userId, collectionId);
@@ -464,46 +460,52 @@ public class UserServiceTests : IDisposable
     }
     
     [Fact]
-    public async void RegisterUserWhenUserExists_ShouldThrowArgumentException()
+    public async Task RegisterUserWhenUserExists_ShouldThrowArgumentException()
     {
         // Arrange
         var name = "name";
         var user = new User { Name = name };
         
-        _userRepositoryMock.Setup(x => x.GetByName(name)).ReturnsAsync(user);
+        _mocks.UserRepositoryMock.Setup(x => x.GetByName(name)).ReturnsAsync(user);
         
         // Act
-        await Assert.ThrowsAsync<ArgumentException>(() => _userService.RegisterUser(name, "password"));
+        var action = () => _userService.RegisterUser(name, "password");
+        
+        // Assert
+        await Assert.ThrowsAsync<ArgumentException>(action);
     }
     
     [Fact]
-    public async void RegisterUserWhenPasswordIsEmpty_ShouldThrowArgumentException()
+    public async Task RegisterUserWhenPasswordIsEmpty_ShouldThrowArgumentException()
     {
         // Arrange
         var name = "name";
         
         // Act
-        await Assert.ThrowsAsync<ArgumentException>(() => _userService.RegisterUser(name, ""));
+        var action = () => _userService.RegisterUser(name, "");
+        
+        // Assert
+        await Assert.ThrowsAsync<ArgumentException>(action);
     }
     
     [Fact]
-    public async void RegisterUserWhenUserNotExists_ShouldAddUser()
+    public async Task RegisterUserWhenUserNotExists_ShouldAddUser()
     {
         // Arrange
         var name = "name";
         var password = "password";
         
-        _userRepositoryMock.Setup(x => x.Add(It.IsAny<User>(), true));
+        _mocks.UserRepositoryMock.Setup(x => x.Add(It.IsAny<User>(), true));
         
         // Act
         await _userService.RegisterUser(name, password);
         
         // Assert
-        _userRepositoryMock.Verify(x => x.Add(It.IsAny<User>(), true), Times.Once);
+        _mocks.UserRepositoryMock.Verify(x => x.Add(It.IsAny<User>(), true), Times.Once);
     }
     
     [Fact]
-    public async void AuthenticateUserWhenUserNotExists_ShouldReturnNull()
+    public async Task AuthenticateUserWhenUserNotExists_ShouldReturnNull()
     {
         // Arrange
         var name = "name";
@@ -516,14 +518,14 @@ public class UserServiceTests : IDisposable
     }
     
     [Fact]
-    public async void AuthenticateUserWhenPasswordNotMatch_ShouldReturnNull()
+    public async Task AuthenticateUserWhenPasswordNotMatch_ShouldReturnNull()
     {
         // Arrange
         var name = "name";
         var password = "password";
         var user = await _userService.RegisterUser(name, password);
         
-        _userRepositoryMock.Setup(x => x.GetByName(name)).ReturnsAsync(user);
+        _mocks.UserRepositoryMock.Setup(x => x.GetByName(name)).ReturnsAsync(user);
         
         // Act
         var result = await _userService.AuthenticateUser(name, "notMyPassword");
@@ -533,14 +535,14 @@ public class UserServiceTests : IDisposable
     }
     
     [Fact]
-    public async void AuthenticateUserWhenPasswordMatch_ShouldReturnUser()
+    public async Task AuthenticateUserWhenPasswordMatch_ShouldReturnUser()
     {
         // Arrange
         var name = "name";
         var password = "password";
         var user = await _userService.RegisterUser(name, password);
         
-        _userRepositoryMock.Setup(x => x.GetByName(name)).ReturnsAsync(user);
+        _mocks.UserRepositoryMock.Setup(x => x.GetByName(name)).ReturnsAsync(user);
         
         // Act
         var result = await _userService.AuthenticateUser(name, password);
@@ -590,14 +592,10 @@ public class UserServiceTests : IDisposable
         Assert.False(result);
     }
 
-    
+
     public void Dispose()
     {
-        _userRepositoryMock.VerifyAll();
-        _collectionRepositoryMock.VerifyAll();
-        _ruleRepositoryMock.VerifyAll();
-        _userRepositoryMock.Reset();
-        _collectionRepositoryMock.Reset();
-        _ruleRepositoryMock.Reset();
+        _mocks.VerifyAll();
+        _mocks.Reset();
     }
 }

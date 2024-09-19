@@ -3,9 +3,16 @@ using Xellarium.BusinessLogic.Models;
 
 namespace Xellarium.BusinessLogic.Test.Models;
 
-[AllureSuite("Collection")]
 public class CollectionTests
 {
+    private readonly CollectionBuilder _builder;
+    
+    public CollectionTests()
+    {
+        _builder = new CollectionBuilder();
+    }
+    
+    [Fact]
     public void AddRule_AddsRule()
     {
         // Arrange
@@ -24,7 +31,7 @@ public class CollectionTests
     {
         // Arrange
         var rule = ObjectMother.SimpleRule();
-        var collection = new CollectionBuilder()
+        var collection = _builder
             .WithRules(rule)
             .Build();
 
@@ -65,7 +72,7 @@ public class CollectionTests
     public void RemoveRule_ThrowsIfRuleNotInCollection()
     {
         // Arrange
-        var collection = new CollectionBuilder()
+        var collection = _builder
             .WithRules(new Rule())
             .Build();
         

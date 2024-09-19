@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using Xellarium.Shared;
 
-namespace Xellarium.BusinessLogic.Test.Shared;
+namespace Xellarium.Shared.Test;
 
 public class DefaultDictionaryTests
 {

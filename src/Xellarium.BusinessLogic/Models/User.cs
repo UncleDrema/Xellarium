@@ -12,8 +12,8 @@ public class User : BaseModel
     public UserRole Role { get; set; } = UserRole.User;
     public int WarningsCount { get; set; } = 0;
     public bool IsBlocked { get; set; } = false;
-    public virtual ICollection<Rule> Rules { get; set; } = new List<Rule>();
-    public virtual ICollection<Collection> Collections { get; set; } = new List<Collection>();
+    public virtual ICollection<Rule> Rules { get; init; } = new List<Rule>();
+    public virtual ICollection<Collection> Collections { get; init; } = new List<Collection>();
     
     public void AddWarning()
     {
@@ -26,6 +26,10 @@ public class User : BaseModel
     
     public void RemoveWarning()
     {
+        if (WarningsCount == 0)
+        {
+            throw new InvalidOperationException("No warnings to remove");
+        }
         WarningsCount--;
         if (WarningsCount < 3)
         {
@@ -35,12 +39,14 @@ public class User : BaseModel
 
     public void AddCollection(Collection collection)
     {
+        ArgumentNullException.ThrowIfNull(collection, nameof(collection));
         collection.Owner = this;
         Collections.Add(collection);
     }
 
     public void AddRule(Rule rule)
     {
+        ArgumentNullException.ThrowIfNull(rule, nameof(rule));
         rule.Owner = this;
         Rules.Add(rule);
     }

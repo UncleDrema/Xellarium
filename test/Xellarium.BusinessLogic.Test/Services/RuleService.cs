@@ -5,17 +5,15 @@ using Xellarium.BusinessLogic.Services;
 
 namespace Xellarium.BusinessLogic.Test.Services;
 
-public class RuleServiceTests : IDisposable
+public class RuleServiceTests : IDisposable, IClassFixture<RepositoryMocks>
 {
-    private readonly Mock<ICollectionRepository> _collectionRepositoryMock;
-    private readonly Mock<IRuleRepository> _ruleRepositoryMock;
+    private readonly RepositoryMocks _mocks;
     private readonly RuleService _ruleService;
 
-    public RuleServiceTests()
+    public RuleServiceTests(RepositoryMocks mocks)
     {
-        _collectionRepositoryMock = new Mock<ICollectionRepository>();
-        _ruleRepositoryMock = new Mock<IRuleRepository>();
-        _ruleService = new RuleService(_ruleRepositoryMock.Object, _collectionRepositoryMock.Object);
+        _mocks = mocks;
+        _ruleService = new RuleService(_mocks.RuleRepositoryMock.Object, _mocks.CollectionRepositoryMock.Object);
     }
     
     [Fact]
@@ -24,7 +22,7 @@ public class RuleServiceTests : IDisposable
         // Arrange
         var rule1 = new Rule();
         var rule2 = new Rule() { IsDeleted = true };
-        _ruleRepositoryMock.Setup(repo => repo.GetAll(false)).ReturnsAsync([rule1]);
+        _mocks.RuleRepositoryMock.Setup(repo => repo.GetAll(false)).ReturnsAsync([rule1]);
 
         // Act
         var result = await _ruleService.GetRules();
@@ -38,7 +36,7 @@ public class RuleServiceTests : IDisposable
     {
         // Arrange
         var rule = new Rule();
-        _ruleRepositoryMock.Setup(repo => repo.Get(It.IsAny<int>(), false)).ReturnsAsync(rule);
+        _mocks.RuleRepositoryMock.Setup(repo => repo.Get(It.IsAny<int>(), false)).ReturnsAsync(rule);
 
         // Act
         var result = await _ruleService.GetRule(1);
@@ -52,13 +50,13 @@ public class RuleServiceTests : IDisposable
     {
         // Arrange
         var rule = new Rule();
-        _ruleRepositoryMock.Setup(repo => repo.Add(rule, true)).Returns(Task.FromResult(rule));
+        _mocks.RuleRepositoryMock.Setup(repo => repo.Add(rule, true)).Returns(Task.FromResult(rule));
 
         // Act
         await _ruleService.AddRule(rule);
 
         // Assert
-        _ruleRepositoryMock.Verify(repo => repo.Add(rule, true), Times.Once);
+        _mocks.RuleRepositoryMock.Verify(repo => repo.Add(rule, true), Times.Once);
     }
     
     [Fact]
@@ -66,14 +64,14 @@ public class RuleServiceTests : IDisposable
     {
         // Arrange
         var rule = new Rule();
-        _ruleRepositoryMock.Setup(repo => repo.Exists(rule.Id, false)).ReturnsAsync(true);
-        _ruleRepositoryMock.Setup(repo => repo.Update(rule)).Returns(Task.CompletedTask);
+        _mocks.RuleRepositoryMock.Setup(repo => repo.Exists(rule.Id, false)).ReturnsAsync(true);
+        _mocks.RuleRepositoryMock.Setup(repo => repo.Update(rule)).Returns(Task.CompletedTask);
 
         // Act
         await _ruleService.UpdateRule(rule);
 
         // Assert
-        _ruleRepositoryMock.Verify(repo => repo.Update(rule), Times.Once);
+        _mocks.RuleRepositoryMock.Verify(repo => repo.Update(rule), Times.Once);
     }
     
     [Fact]
@@ -81,14 +79,14 @@ public class RuleServiceTests : IDisposable
     {
         // Arrange
         var rule = new Rule();
-        _ruleRepositoryMock.Setup(repo => repo.Get(It.IsAny<int>(), true)).ReturnsAsync(rule);
-        _ruleRepositoryMock.Setup(repo => repo.SoftDelete(It.IsAny<int>())).Returns(Task.CompletedTask);
+        _mocks.RuleRepositoryMock.Setup(repo => repo.Get(It.IsAny<int>(), true)).ReturnsAsync(rule);
+        _mocks.RuleRepositoryMock.Setup(repo => repo.SoftDelete(It.IsAny<int>())).Returns(Task.CompletedTask);
 
         // Act
         await _ruleService.DeleteRule(1);
 
         // Assert
-        _ruleRepositoryMock.Verify(repo => repo.SoftDelete(It.IsAny<int>()), Times.Once);
+        _mocks.RuleRepositoryMock.Verify(repo => repo.SoftDelete(It.IsAny<int>()), Times.Once);
     }
     
     // test GetCollectionRules, RuleExists and GetOwner
@@ -99,7 +97,7 @@ public class RuleServiceTests : IDisposable
         var rule1 = new Rule();
         var rule2 = new Rule();
         var collection = new Collection() { Rules = [rule1, rule2] };
-        _collectionRepositoryMock.Setup(repo => repo.Get(It.IsAny<int>(), false)).ReturnsAsync(collection);
+        _mocks.CollectionRepositoryMock.Setup(repo => repo.Get(It.IsAny<int>(), false)).ReturnsAsync(collection);
         
         // Act
         var result = await _ruleService.GetCollectionRules(collection.Id);
@@ -113,7 +111,7 @@ public class RuleServiceTests : IDisposable
     {
         // Arrange
         var rule = new Rule();
-        _ruleRepositoryMock.Setup(repo => repo.Exists(rule.Id, false)).ReturnsAsync(true);
+        _mocks.RuleRepositoryMock.Setup(repo => repo.Exists(rule.Id, false)).ReturnsAsync(true);
 
         // Act
         var result = await _ruleService.RuleExists(rule.Id);
@@ -127,7 +125,7 @@ public class RuleServiceTests : IDisposable
     {
         // Arrange
         var rule = new Rule() { Owner = new User() { Id = 1 }};
-        _ruleRepositoryMock.Setup(repo => repo.Get(It.IsAny<int>(), false)).ReturnsAsync(rule);
+        _mocks.RuleRepositoryMock.Setup(repo => repo.Get(It.IsAny<int>(), false)).ReturnsAsync(rule);
 
         // Act
         var result = await _ruleService.GetOwner(rule.Id);
@@ -138,9 +136,7 @@ public class RuleServiceTests : IDisposable
     
     public void Dispose()
     {
-        _collectionRepositoryMock.VerifyAll();
-        _ruleRepositoryMock.VerifyAll();
-        _collectionRepositoryMock.Reset();
-        _ruleRepositoryMock.Reset();
+        _mocks.VerifyAll();
+        _mocks.Reset();
     }
 }
