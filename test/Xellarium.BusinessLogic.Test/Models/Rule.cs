@@ -1,11 +1,15 @@
-﻿using Xellarium.BusinessLogic.Models;
+﻿using Allure.Xunit.Attributes;
+using Xellarium.BusinessLogic.Models;
 using Xellarium.Shared;
 
 namespace Xellarium.BusinessLogic.Test.Models;
 
+[AllureParentSuite("Business Logic")]
+[AllureSuite("Models")]
+[AllureSubSuite("Rule")]
 public class RuleTests(GameOfLife gameOfLife) : IClassFixture<GameOfLife>
 {
-    [Theory]
+    [Theory(DisplayName = "Game of Life Static Combinations")]
     [MemberData(nameof(GameOfLife.StaticCombinationsData), MemberType = typeof(GameOfLife))]
     public void Rule_GameOfLife_Static_Combinations(int [][] cells, int steps)
     {
@@ -20,7 +24,7 @@ public class RuleTests(GameOfLife gameOfLife) : IClassFixture<GameOfLife>
         Assert.Equal(cells, world.Cells);
     }
     
-    [Theory]
+    [Theory(DisplayName = "Game of Life Dying Combinations")]
     [MemberData(nameof(GameOfLife.DyingCombinationsData), MemberType = typeof(GameOfLife))]
     public void Rule_GameOfLife_Dying_Combinations(int[][] cells, int steps)
     {
@@ -41,7 +45,7 @@ public class RuleTests(GameOfLife gameOfLife) : IClassFixture<GameOfLife>
         }
     }
 
-    [Fact]
+    [Fact(DisplayName = "Rule next state throws exception if offsets are null")]
     public void Rule_ThrowsIfOffsets_AreNull()
     {
         // Arrange
@@ -55,7 +59,7 @@ public class RuleTests(GameOfLife gameOfLife) : IClassFixture<GameOfLife>
         Assert.Throws<ArgumentNullException>(action);
     }
 
-    [Theory]
+    [Theory(DisplayName = "Rule next state throws exception if times is less than one")]
     [InlineData(0)]
     [InlineData(-1)]
     [InlineData(-10)]

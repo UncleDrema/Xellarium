@@ -1,8 +1,13 @@
-﻿namespace Xellarium.BusinessLogic.Test.Models;
+﻿using Allure.Xunit.Attributes;
 
+namespace Xellarium.BusinessLogic.Test.Models;
+
+[AllureParentSuite("Business Logic")]
+[AllureSuite("Models")]
+[AllureSubSuite("Base Model")]
 public class BaseModel
 {
-    [Fact]
+    [Fact(DisplayName = "Mark created makes CreatedAt set")]
     public void MarkCreated_MakesCreatedAtSet()
     {
         // Arrange
@@ -15,7 +20,7 @@ public class BaseModel
         Assert.NotEqual(default, baseModel.CreatedAt);
     }
     
-    [Fact]
+    [Fact(DisplayName = "Double mark created throws exception")]
     public void DoubleMarkCreated_ThrowsException()
     {
         // Arrange
@@ -29,7 +34,7 @@ public class BaseModel
         Assert.Throws<InvalidOperationException>(action);
     }
     
-    [Fact]
+    [Fact(DisplayName = "Mark updated makes UpdatedAt set")]
     public void MarkUpdated_MakesUpdatedAtSet()
     {
         // Arrange
@@ -42,7 +47,7 @@ public class BaseModel
         Assert.NotEqual(default, baseModel.UpdatedAt);
     }
     
-    [Fact]
+    [Fact(DisplayName = "Second mark updated makes new UpdatedAt later in time")]
     public void SecondMarkUpdated_MakesNewUpdatedAtBigger()
     {
         // Arrange
@@ -57,7 +62,7 @@ public class BaseModel
         Assert.True(baseModel.UpdatedAt > oldUpdatedAt);
     }
     
-    [Fact]
+    [Fact(DisplayName = "Double delete throws exception")]
     public void DoubleDelete_ThrowsException()
     {
         // Arrange
@@ -71,7 +76,7 @@ public class BaseModel
         Assert.Throws<InvalidOperationException>(action);
     }
     
-    [Fact]
+    [Fact(DisplayName = "Delete makes IsDeleted set")]
     public void Delete_MakesIsDeletedSet()
     {
         // Arrange

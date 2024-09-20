@@ -1,11 +1,15 @@
-﻿using Xellarium.BusinessLogic.Models;
+﻿using Allure.Xunit.Attributes;
+using Xellarium.BusinessLogic.Models;
 
 namespace Xellarium.BusinessLogic.Test.Models;
 
+[AllureParentSuite("Business Logic")]
+[AllureSuite("Models")]
+[AllureSubSuite("User")]
 public class UserTests
 {
     // Проверим блокировку пользователя после трёх предупреждений
-    [Fact]
+    [Fact(DisplayName = "Warning after two warnings blocks user")]
     public void AddWarning_ThreeWarnings_BlockUser()
     {
         // Arrange
@@ -21,7 +25,7 @@ public class UserTests
     }
     
     // Проверим, что после снятия предупреждения пользователь разблокируется
-    [Fact]
+    [Fact(DisplayName = "Remove warning unblocks user if warnings count is less than 3")]
     public void RemoveWarning_ThreeWarnings_UnblockUser()
     {
         // Arrange
@@ -36,7 +40,7 @@ public class UserTests
         Assert.False(user.IsBlocked);
     }
     
-    [Fact]
+    [Fact(DisplayName = "Remove warning after four warnings remains user still blocked")]
     public void RemoveWarning_AfterFourWarnings_StillBlocked()
     {
         // Arrange
@@ -52,7 +56,7 @@ public class UserTests
         Assert.True(user.IsBlocked);
     }
     
-    [Fact]
+    [Fact(DisplayName = "Remove warning when zero warnings throws exception")]
     public void RemoveWarning_WhenZeroWarnings_ThrowException()
     {
         // Arrange
@@ -67,7 +71,7 @@ public class UserTests
         Assert.Throws<InvalidOperationException>(act);
     }
     
-    [Fact]
+    [Fact(DisplayName = "Add collection to user makes user owner of the collection")]
     public void AddCollection_AddCollectionToUser()
     {
         // Arrange
@@ -82,7 +86,7 @@ public class UserTests
         Assert.Equal(user, collection.Owner);
     }
     
-    [Fact]
+    [Fact(DisplayName = "Add null collection to user throws exception")]
     public void AddCollection_NullCollection_ThrowArgumentNullException()
     {
         // Arrange
@@ -95,7 +99,7 @@ public class UserTests
         Assert.Throws<ArgumentNullException>(act);
     }
     
-    [Fact]
+    [Fact(DisplayName = "Add rule to user makes user owner of the rule")]
     public void AddRule_AddRuleToUser()
     {
         // Arrange
@@ -110,7 +114,7 @@ public class UserTests
         Assert.Equal(user, rule.Owner);
     }
     
-    [Fact]
+    [Fact(DisplayName = "Add null rule to user throws exception")]
     public void AddRule_NullRule_ThrowArgumentNullException()
     {
         // Arrange

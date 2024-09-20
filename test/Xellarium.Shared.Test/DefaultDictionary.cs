@@ -1,60 +1,87 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using Allure.Xunit.Attributes;
 
 namespace Xellarium.Shared.Test;
 
+[AllureParentSuite("Shared Logic")]
+[AllureSuite("Utils")]
+[AllureSubSuite("DefaultDictionary")]
 public class DefaultDictionaryTests
 {
     // Выключено, т.к. аргумент используется для выведения generic типа
     [SuppressMessage("Usage", "xUnit1026:Theory methods should use all of their parameters")]
-    [Theory]
+    [Theory(DisplayName = "No factory specified makes dictionary return default value")]
     [InlineData(default(int))]
     [InlineData(default(double))]
     [InlineData(default(string))]
     public void NoFactorySpecified_ReturnsDefault<T>(T typeValue)
     {
-        var dict = new DefaultDictionary<int, T>();
+        // Arrange
+        var dict = ObjectMother.CreateDefaultDictionary<int, T>();
 
-        Assert.Equal(default, dict[0]);
+        // Act
+        var element = dict[0];
+        
+        // Assert
+        Assert.Equal(default, element);
     }
 
-    [Theory]
+    [Theory(DisplayName = "Default value specified makes dictionary return it")]
     [InlineData(3)]
     [InlineData(1.25)]
     [InlineData("some string")]
     public void DefaultValueSpecified_ReturnsIt<T>(T defaultValue)
     {
-        var dict = new DefaultDictionary<int, T>(defaultValue);
+        // Arrange
+        var dict = ObjectMother.CreateDefaultDictionary<int, T>(defaultValue);
 
-        Assert.Equal(defaultValue, dict[0]);
+        // Act
+        var element = dict[0];
+        
+        // Assert
+        Assert.Equal(defaultValue, element);
     }
 
-    [Theory]
+    [Theory(DisplayName = "Factory specified makes dictionary return value from it")]
     [MemberData(nameof(FactoryAndValues))]
     public void FactorySpecified_ReturnsValueFromIt<TK, TV>(Func<TK, TV> factory, IEnumerable<TK> values)
     {
-        var dict = new DefaultDictionary<TK, TV>(factory);
+        // Arrange
+        var dict = ObjectMother.CreateDefaultDictionary(factory);
 
-        Assert.All(values, key => Assert.Equal(factory(key), dict[key]));
+        // Act
+        Action<TK> action = (key) => Assert.Equal(factory(key), dict[key]);
+        
+        // Assert
+        Assert.All(values, action);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Inner dictionary access throws exception")]
     public void InnerDictionaryAccess_ThrowsException()
     {
-        var dict = new DefaultDictionary<int, int>();
+        // Arrange
+        var dict = ObjectMother.CreateDefaultDictionary<int, int>();
 
-        Assert.Throws<KeyNotFoundException>(() => dict.InnerDictionary[0]);
+        // Act
+        Func<object?> action = () => dict.InnerDictionary[0];
+        
+        // Assert
+        Assert.Throws<KeyNotFoundException>(action);
     }
 
-    [Theory]
+    [Theory(DisplayName = "Get existing value returns it")]
     [InlineData(5)]
     [InlineData("value")]
     [InlineData(true)]
     public void GetExistedValue_ReturnsIt<T>(T value)
     {
-        var dict = new DefaultDictionary<int, T>();
+        // Arrange
+        var dict = ObjectMother.CreateDefaultDictionary<int, T>();
 
+        // Act
         dict[0] = value;
 
+        // Assert
         Assert.Equal(value, dict[0]);
     }
 

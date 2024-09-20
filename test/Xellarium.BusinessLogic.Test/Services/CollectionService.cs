@@ -1,22 +1,27 @@
-﻿using Moq;
+﻿using Allure.Xunit.Attributes;
+using Allure.Xunit.Attributes.Steps;
+using Moq;
 using Xellarium.BusinessLogic.Models;
-using Xellarium.BusinessLogic.Repository;
 using Xellarium.BusinessLogic.Services;
 
 namespace Xellarium.BusinessLogic.Test.Services;
 
+[AllureParentSuite("Business Logic")]
+[AllureSuite("Services")]
+[AllureSubSuite("CollectionService")]
 public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks>
 {
     private readonly RepositoryMocks _mocks;
     private readonly CollectionService _collectionService;
 
+    [AllureBefore("Create collection service and mocks")]
     public CollectionServiceTests(RepositoryMocks mocks)
     {
         _mocks = mocks;
         _collectionService = new CollectionService(_mocks.CollectionRepositoryMock.Object, _mocks.RuleRepositoryMock.Object);
     }
 
-    [Fact]
+    [Fact(DisplayName = "GetCollections returns all not deleted collections")]
     public async Task GetCollections_ReturnsAllNotDeletedCollections()
     {
         // Arrange
@@ -31,7 +36,7 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
         Assert.Equal([col1], result);
     }
 
-    [Fact]
+    [Fact(DisplayName = "GetCollection returns collection when exists")]
     public async Task GetCollection_ReturnsCollection_WhenExists()
     {
         // Arrange
@@ -39,13 +44,13 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
         _mocks.CollectionRepositoryMock.Setup(repo => repo.Get(It.IsAny<int>(), false)).ReturnsAsync(collection);
 
         // Act
-        var result = await _collectionService.GetCollection(1);
+        var result = await _collectionService.GetCollection(It.IsAny<int>());
 
         // Assert
         Assert.Equal(collection, result);
     }
 
-    [Fact]
+    [Fact(DisplayName = "AddCollection adds new collection")]
     public async Task AddCollection_AddsNewCollection()
     {
         // Arrange
@@ -59,7 +64,7 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
         _mocks.CollectionRepositoryMock.Verify(repo => repo.Add(collection, true), Times.Once);
     }
     
-    [Fact]
+    [Fact(DisplayName = "UpdateCollection updates collection")]
     public async Task UpdateCollection_UpdatesCollection()
     {
         // Arrange
@@ -74,7 +79,7 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
         _mocks.CollectionRepositoryMock.Verify(repo => repo.Update(collection), Times.Once);
     }
     
-    [Fact]
+    [Fact(DisplayName = "DeleteCollection soft deletes collection")]
     public async Task DeleteCollection_SoftDeletesCollection()
     {
         // Arrange
@@ -89,7 +94,7 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
         _mocks.CollectionRepositoryMock.Verify(repo => repo.SoftDelete(It.IsAny<int>()), Times.Once);
     }
     
-    [Fact]
+    [Fact(DisplayName = "AddRule adds new rule")]
     public async Task AddRule_AddsNewRule()
     {
         // Arrange
@@ -105,7 +110,7 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
         Assert.Contains(rule, collection.Rules);
     }
     
-    [Fact]
+    [Fact(DisplayName = "RemoveRule removes rule")]
     public async Task RemoveRule_RemovesRule()
     {
         // Arrange
@@ -121,7 +126,7 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
         Assert.DoesNotContain(rule, collection.Rules);
     }
     
-    [Theory]
+    [Theory(DisplayName = "SetPrivacy sets corresponding privacy")]
     [InlineData(true)]
     [InlineData(false)]
     public async Task SetPrivacy_SetsPrivacy(bool isPrivate)
@@ -138,7 +143,7 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
         Assert.Equal(isPrivate, collection.IsPrivate);
     }
     
-    [Fact]
+    [Fact(DisplayName = "GetCollectionRules returns all rules of collection")]
     public async Task CollectionExists_ReturnsTrue_WhenCollectionExists()
     {
         // Arrange
@@ -151,7 +156,7 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
         Assert.True(result);
     }
     
-    [Fact]
+    [Fact(DisplayName = "CollectionExists returns false when collection does not exist")]
     public async Task CollectionExists_ReturnsFalse_WhenCollectionDoesNotExist()
     {
         // Arrange
@@ -164,7 +169,7 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
         Assert.False(result);
     }
     
-    [Fact]
+    [Fact(DisplayName = "GetOwner returns owner of collection")]
     public async Task GetOwner_ReturnsOwner()
     {
         // Arrange
@@ -178,7 +183,7 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
         Assert.Equal(collection.Owner, result);
     }
     
-    [Fact]
+    [Fact(DisplayName = "GetRuleCollections returns collections with rule")]
     public async Task GetRuleCollections_ReturnsCollectionsWithRule()
     {
         // Arrange
@@ -197,6 +202,7 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
         Assert.Contains(col1, result);
     }
     
+    [AllureAfter("Verify and reset all mocks")]
     public void Dispose()
     {
         _mocks.VerifyAll();

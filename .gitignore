@@ -5,7 +5,9 @@ _ReSharper.*
 packages/
 diagrams/
 artifacts/
-allure-report/
+allure-results/
+test/allure-report/*
+!test/allure-report/history/
 logs/
 *.user
 *.suo

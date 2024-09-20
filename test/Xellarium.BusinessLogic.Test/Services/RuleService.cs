@@ -1,22 +1,27 @@
-﻿using Moq;
+﻿using Allure.Xunit.Attributes;
+using Allure.Xunit.Attributes.Steps;
+using Moq;
 using Xellarium.BusinessLogic.Models;
-using Xellarium.BusinessLogic.Repository;
 using Xellarium.BusinessLogic.Services;
 
 namespace Xellarium.BusinessLogic.Test.Services;
 
+[AllureParentSuite("Business Logic")]
+[AllureSuite("Services")]
+[AllureSubSuite("RuleService")]
 public class RuleServiceTests : IDisposable, IClassFixture<RepositoryMocks>
 {
     private readonly RepositoryMocks _mocks;
     private readonly RuleService _ruleService;
 
+    [AllureBefore("Create rule service and mocks")]
     public RuleServiceTests(RepositoryMocks mocks)
     {
         _mocks = mocks;
         _ruleService = new RuleService(_mocks.RuleRepositoryMock.Object, _mocks.CollectionRepositoryMock.Object);
     }
     
-    [Fact]
+    [Fact(DisplayName = "GetRules returns all not deleted rules")]
     public async Task GetRules_ReturnsAllNotDeletedRules()
     {
         // Arrange
@@ -31,7 +36,7 @@ public class RuleServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         Assert.Equal([rule1], result);
     }
     
-    [Fact]
+    [Fact(DisplayName = "GetRule returns rule when exists")]
     public async Task GetRule_ReturnsRule_WhenExists()
     {
         // Arrange
@@ -45,7 +50,7 @@ public class RuleServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         Assert.Equal(rule, result);
     }
     
-    [Fact]
+    [Fact(DisplayName = "AddRule adds new rule")]
     public async Task AddRule_AddsNewRule()
     {
         // Arrange
@@ -59,7 +64,7 @@ public class RuleServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         _mocks.RuleRepositoryMock.Verify(repo => repo.Add(rule, true), Times.Once);
     }
     
-    [Fact]
+    [Fact(DisplayName = "UpdateRule updates rule")]
     public async Task UpdateRule_UpdatesRule()
     {
         // Arrange
@@ -74,7 +79,7 @@ public class RuleServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         _mocks.RuleRepositoryMock.Verify(repo => repo.Update(rule), Times.Once);
     }
     
-    [Fact]
+    [Fact(DisplayName = "DeleteRule soft deletes rule")]
     public async Task DeleteRule_SoftDeletesRule()
     {
         // Arrange
@@ -89,8 +94,7 @@ public class RuleServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         _mocks.RuleRepositoryMock.Verify(repo => repo.SoftDelete(It.IsAny<int>()), Times.Once);
     }
     
-    // test GetCollectionRules, RuleExists and GetOwner
-    [Fact]
+    [Fact(DisplayName = "GetCollectionRules returns all rules of collection")]
     public async Task GetCollectionRules_ReturnsAllRulesOfCollection()
     {
         // Arrange
@@ -106,7 +110,7 @@ public class RuleServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         Assert.Equal(collection.Rules, result);
     }
     
-    [Fact]
+    [Fact(DisplayName = "RuleExists returns true when rule exists")]
     public async Task RuleExists_ReturnsTrue_WhenRuleExists()
     {
         // Arrange
@@ -120,7 +124,7 @@ public class RuleServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         Assert.True(result);
     }
     
-    [Fact]
+    [Fact(DisplayName = "GetOwner returns owner of rule")]
     public async Task GetOwner_ReturnsOwner()
     {
         // Arrange
@@ -134,6 +138,7 @@ public class RuleServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         Assert.Equal(rule.Owner, result);
     }
     
+    [AllureAfter("Verify and reset all mocks")]
     public void Dispose()
     {
         _mocks.VerifyAll();

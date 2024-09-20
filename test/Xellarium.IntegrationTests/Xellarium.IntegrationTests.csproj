@@ -30,6 +30,12 @@
     </ItemGroup>
 
     <ItemGroup>
+        <None Update="allureConfig.json">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
+    <ItemGroup>
         <Using Include="Xunit"/>
     </ItemGroup>
 

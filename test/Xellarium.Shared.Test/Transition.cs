@@ -1,10 +1,16 @@
-﻿namespace Xellarium.Shared.Test;
+﻿using Allure.Xunit.Attributes;
 
+namespace Xellarium.Shared.Test;
+
+[AllureParentSuite("Shared Logic")]
+[AllureSuite("Business Logic")]
+[AllureSubSuite("Transition")]
 public class TransitionTests
 {
-    [Fact]
+    [Fact(DisplayName = "IsSatisfiedBy returns true when all requirements are met")]
     public void IsSatisfiedBy_ReturnsTrue_WhenAllRequirementsAreMet()
     {
+        // Arrange
         var transition = new Transition(1, new Dictionary<int, IList<int>>
         {
             {0, [1]},
@@ -17,29 +23,40 @@ public class TransitionTests
             {1, 1}
         };
 
-        Assert.True(transition.IsSatisfiedBy(neighbours));
+        // Act
+        var result = transition.IsSatisfiedBy(neighbours);
+
+        // Assert
+        Assert.True(result);
     }
     
-    [Fact]
+    [Fact(DisplayName = "IsSatisfiedBy returns false when no requirements are met")]
     public void IsSatisfiedBy_ReturnsFalse_WhenNoRequirementsMet()
     {
+        // Arrange
         var transition = new Transition(1, new Dictionary<int, IList<int>>
         {
             {1, [1, 3]}
         });
-
+        
         var neighbours = new Dictionary<int, int>
         {
             {0, 1},
             {1, 2}
         };
 
-        Assert.False(transition.IsSatisfiedBy(neighbours));
+        // Act
+        var result = transition.IsSatisfiedBy(neighbours);
+
+        
+        // Assert
+        Assert.False(result);
     }
     
-    [Fact]
-    public void IsSatisfiedBy_ReturnsFalse_WhenOneOfRequirementsIsMet()
+    [Fact(DisplayName = "IsSatisfiedBy returns true when one of requirements is met")]
+    public void IsSatisfiedBy_ReturnsTrue_WhenOneOfRequirementsIsMet()
     {
+        // Arrange
         var transition = new Transition(1, new Dictionary<int, IList<int>>
         {
             {0, [1]},
@@ -51,13 +68,18 @@ public class TransitionTests
             {0, 0},
             {1, 2}
         };
-
-        Assert.True(transition.IsSatisfiedBy(neighbours));
+        
+        // Act
+        var result = transition.IsSatisfiedBy(neighbours);
+        
+        // Assert
+        Assert.True(result);
     }
     
-    [Fact]
+    [Fact(DisplayName = "IsSatisfiedBy returns true when no requirements are set")]
     public void IsSatisfiedBy_ReturnsTrue_WhenNoRequirementsAreSet()
     {
+        // Arrange
         var transition = new Transition(1);
 
         var neighbours = new Dictionary<int, int>
@@ -65,7 +87,11 @@ public class TransitionTests
             {0, 1},
             {1, 1}
         };
-
-        Assert.True(transition.IsSatisfiedBy(neighbours));
+        
+        // Act
+        var result = transition.IsSatisfiedBy(neighbours);
+        
+        // Assert
+        Assert.True(result);
     }
 }

@@ -1,18 +1,23 @@
 ﻿using Allure.Xunit.Attributes;
+using Allure.Xunit.Attributes.Steps;
 using Xellarium.BusinessLogic.Models;
 
 namespace Xellarium.BusinessLogic.Test.Models;
 
+[AllureParentSuite("Business Logic")]
+[AllureSuite("Models")]
+[AllureSubSuite("Collection")]
 public class CollectionTests
 {
     private readonly CollectionBuilder _builder;
     
+    [AllureBefore("Create collection builder")]
     public CollectionTests()
     {
         _builder = new CollectionBuilder();
     }
     
-    [Fact]
+    [Fact(DisplayName = "Add rule adds rule to collection")]
     public void AddRule_AddsRule()
     {
         // Arrange
@@ -26,7 +31,7 @@ public class CollectionTests
         Assert.Contains(rule, collection.Rules);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Remove rule removes rule from collection")]
     public void RemoveRule_RemovesRule()
     {
         // Arrange
@@ -42,7 +47,7 @@ public class CollectionTests
         Assert.DoesNotContain(rule, collection.Rules);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Add rule throws exception if rule is null")]
     public void AddRule_ThrowsIfRuleIsNull()
     {
         // Arrange
@@ -55,7 +60,7 @@ public class CollectionTests
         Assert.Throws<ArgumentNullException>(action);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Remove rule throws exception if rule is null")]
     public void RemoveRule_ThrowsIfRuleIsNull()
     {
         // Arrange
@@ -68,7 +73,7 @@ public class CollectionTests
         Assert.Throws<ArgumentNullException>(action);
     }
 
-    [Fact]
+    [Fact(DisplayName = "Remove rule throws exception if rule is not in collection")]
     public void RemoveRule_ThrowsIfRuleNotInCollection()
     {
         // Arrange

@@ -1,14 +1,20 @@
-﻿using Moq;
+﻿using Allure.Xunit.Attributes;
+using Allure.Xunit.Attributes.Steps;
+using Moq;
 using Xellarium.BusinessLogic.Models;
 using Xellarium.BusinessLogic.Services;
 
 namespace Xellarium.BusinessLogic.Test.Services;
 
+[AllureParentSuite("Business Logic")]
+[AllureSuite("Services")]
+[AllureSubSuite("UserService")]
 public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
 {
     private readonly RepositoryMocks _mocks;
     private readonly UserService _userService;
     
+    [AllureBefore("Create user service and mocks")]
     public UserServiceTests(RepositoryMocks mocks)
     {
         _mocks = mocks;
@@ -19,7 +25,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
             _mocks.NeighborhoodRepositoryMock.Object);
     }
     
-    [Fact]
+    [Fact(DisplayName = "GetUserById returns user when user exists")]
     public async Task GetUserById_WhenUserExists_ShouldReturnUser()
     {
         // Arrange
@@ -35,7 +41,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         Assert.Equal(user, result);
     }
     
-    [Fact]
+    [Fact(DisplayName = "GetUserById returns null when user not exists")]
     public async Task GetUserById_WhenUserNotExists_ShouldReturnNull()
     {
         // Arrange
@@ -48,7 +54,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         Assert.Null(result);
     }
     
-    [Fact]
+    [Fact(DisplayName = "GetUserById returns null when user deleted")]
     public async Task GetUserById_WhenUserDeleted_ShouldReturnNull()
     {
         // Arrange
@@ -65,7 +71,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         Assert.Null(result);
     }
     
-    [Fact]
+    [Fact(DisplayName = "AddUser adds new user when user not exists")]
     public async Task AddUser_WhenUserNotExists_ShouldAddUser()
     {
         // Arrange
@@ -81,7 +87,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         _mocks.UserRepositoryMock.Verify(x => x.Add(user, true), Times.Once);
     }
     
-    [Fact]
+    [Fact(DisplayName = "AddUser throws exception when user exists")]
     public async Task AddUser_WhenUserExists_ShouldNotAddUser()
     {
         // Arrange
@@ -96,7 +102,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         _mocks.UserRepositoryMock.Verify(x => x.Add(user, true), Times.Never);
     }
     
-    [Fact]
+    [Fact(DisplayName = "UpdateUser updates user when user exists")]
     public async Task UpdateUser_WhenUserExists_ShouldUpdateUser()
     {
         // Arrange
@@ -112,7 +118,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         _mocks.UserRepositoryMock.Verify(x => x.Update(user), Times.Once);
     }
     
-    [Fact]
+    [Fact(DisplayName = "UpdateUser throws exception when user not exists")]
     public async Task UpdateUser_WhenUserNotExists_ShouldNotUpdateUser()
     {
         // Arrange
@@ -127,7 +133,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         _mocks.UserRepositoryMock.Verify(x => x.Update(user), Times.Never);
     }
     
-    [Fact]
+    [Fact(DisplayName = "DeleteUser soft deletes user when user exists")]
     public async Task DeleteUser_WhenUserExists_ShouldSoftDeleteUser()
     {
         // Arrange
@@ -145,7 +151,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         _mocks.UserRepositoryMock.Verify(x => x.HardDelete(userId), Times.Never);
     }
     
-    [Fact]
+    [Fact(DisplayName = "DeleteUser does not tries to delete user when user not exists")]
     public async Task DeleteUser_WhenUserNotExists_ShouldNotDeleteUser()
     {
         // Arrange
@@ -159,7 +165,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         _mocks.UserRepositoryMock.Verify(x => x.HardDelete(userId), Times.Never);
     }
     
-    [Fact]
+    [Fact(DisplayName = "DeleteUser does not tries to delete user when user deleted")]
     public async Task DeleteUser_WhenUserDeleted_ShouldNotDeleteUser()
     {
         // Arrange
@@ -176,21 +182,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         _mocks.UserRepositoryMock.Verify(x => x.HardDelete(userId), Times.Never);
     }
     
-    [Fact]
-    public async Task DeleteUser_WhenUserDoesNotExists_ShouldNotDeleteUser()
-    {
-        // Arrange
-        var userId = 1;
-        
-        // Act
-        await Assert.ThrowsAsync<ArgumentException>(() => _userService.DeleteUser(userId));
-        
-        // Assert
-        _mocks.UserRepositoryMock.Verify(x => x.SoftDelete(userId), Times.Never);
-        _mocks.UserRepositoryMock.Verify(x => x.HardDelete(userId), Times.Never);
-    }
-    
-    [Fact]
+    [Fact(DisplayName = "GetUserCollections returns user collections when user exists")]
     public async Task GetUserCollections_WhenUserExists_ShouldReturnUserCollections()
     {
         // Arrange
@@ -206,7 +198,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         Assert.Equal(user.Collections, result);
     }
     
-    [Fact]
+    [Fact(DisplayName = "GetUserCollections throws exception when user not exists")]
     public async Task GetUserCollections_WhenUserNotExists_ShouldThrowArgumentException()
     {
         // Arrange
@@ -219,7 +211,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         await Assert.ThrowsAsync<ArgumentException>(action);
     }
     
-    [Fact]
+    [Fact(DisplayName = "GetUserRules returns user rules when user exists")]
     public async Task GetUserRules_WhenUserExists_ShouldReturnUserRules()
     {
         // Arrange
@@ -247,7 +239,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         Assert.Equal(user.Collections.SelectMany(c => c.Rules), result);
     }
     
-    [Fact]
+    [Fact(DisplayName = "GetUserRules returns only unique rules")]
     public async Task GetUserRule_ReturnsOnlyUniqueRules()
     {
         // Arrange
@@ -279,7 +271,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         Assert.Equal(user.Collections.SelectMany(c => c.Rules).Distinct(), result);
     }
     
-    [Fact]
+    [Fact(DisplayName = "GetUserRules throws exception when user not exists")]
     public async Task GetUserRules_WhenUserNotExists_ShouldThrowArgumentException()
     {
         // Arrange
@@ -289,7 +281,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         await Assert.ThrowsAsync<ArgumentException>(() => _userService.GetUserRules(userId));
     }
     
-    [Fact]
+    [Fact(DisplayName = "WarnUser adds warning when user exists")]
     public async Task WarnUser_WhenUserExists_ShouldAddWarning()
     {
         // Arrange
@@ -309,7 +301,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         _mocks.UserRepositoryMock.Verify(x => x.Update(user), Times.Once);
     }
     
-    [Fact]
+    [Fact(DisplayName = "WarnUser throws exception when user not exists")]
     public async Task WarnUser_WhenUserNotExists_ShouldThrowArgumentException()
     {
         // Arrange
@@ -319,7 +311,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         await Assert.ThrowsAsync<ArgumentException>(() => _userService.WarnUser(userId));
     }
     
-    [Fact]
+    [Fact(DisplayName = "UserExists when user exists should return true")]
     public async Task UserExists_WhenUserExists_ShouldReturnTrue()
     {
         // Arrange
@@ -334,7 +326,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         Assert.True(result);
     }
     
-    [Fact]
+    [Fact(DisplayName = "UserExists when user not exists should return false")]
     public async Task UserExists_WhenUserNotExists_ShouldReturnFalse()
     {
         // Arrange
@@ -349,7 +341,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         Assert.False(result);
     }
     
-    [Fact]
+    [Fact(DisplayName = "UserExists when user deleted should return false")]
     public async Task UserExists_WhenUserDeleted_ShouldReturnFalse()
     {
         // Arrange
@@ -364,8 +356,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         Assert.False(result);
     }
     
-    // test GetUsers(), NameExists(), GetCollection(), AddRule(), RegisterUser(), AuthenticateUser(), HashPassword(), VerifyPassword()
-    [Fact]
+    [Fact(DisplayName = "GetUsers returns users when users exists")]
     public async Task GetUsers_WhenUsersExists_ShouldReturnUsers()
     {
         // Arrange
@@ -380,7 +371,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         Assert.Equal(users, result);
     }
     
-    [Fact]
+    [Fact(DisplayName = "GetUsers returns empty list when users not exists")]
     public async Task GetUsers_WhenUsersNotExists_ShouldReturnEmptyList()
     {
         // Arrange
@@ -393,7 +384,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         Assert.Empty(result);
     }
     
-    [Fact]
+    [Fact(DisplayName = "NameExists when name exists should return true")]
     public async Task NameExists_WhenNameExists_ShouldReturnTrue()
     {
         // Arrange
@@ -409,7 +400,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         Assert.True(result);
     }
     
-    [Fact]
+    [Fact(DisplayName = "NameExists when name not exists should return false")]
     public async Task NameExists_WhenNameNotExists_ShouldReturnFalse()
     {
         // Arrange
@@ -422,7 +413,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         Assert.False(result);
     }
     
-    [Fact]
+    [Fact(DisplayName = "GetCollection returns collection when collection exists")]
     public async Task GetCollection_WhenCollectionExists_ShouldReturnCollection()
     {
         // Arrange
@@ -442,7 +433,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         Assert.Equal(collection.Id, result.Id);
     }
     
-    [Fact]
+    [Fact(DisplayName = "GetCollection returns null when collection not exists")]
     public async Task GetCollection_WhenCollectionNotExists_ShouldReturnNull()
     {
         // Arrange
@@ -459,7 +450,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         Assert.Null(result);
     }
     
-    [Fact]
+    [Fact(DisplayName = "RegisterUser when user exists should throw ArgumentException")]
     public async Task RegisterUserWhenUserExists_ShouldThrowArgumentException()
     {
         // Arrange
@@ -475,7 +466,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         await Assert.ThrowsAsync<ArgumentException>(action);
     }
     
-    [Fact]
+    [Fact(DisplayName = "RegisterUser when password is empty should throw ArgumentException")]
     public async Task RegisterUserWhenPasswordIsEmpty_ShouldThrowArgumentException()
     {
         // Arrange
@@ -488,7 +479,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         await Assert.ThrowsAsync<ArgumentException>(action);
     }
     
-    [Fact]
+    [Fact(DisplayName = "RegisterUser when user not exists should add user")]
     public async Task RegisterUserWhenUserNotExists_ShouldAddUser()
     {
         // Arrange
@@ -504,7 +495,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         _mocks.UserRepositoryMock.Verify(x => x.Add(It.IsAny<User>(), true), Times.Once);
     }
     
-    [Fact]
+    [Fact(DisplayName = "AuthenticateUser when user not exists should return null")]
     public async Task AuthenticateUserWhenUserNotExists_ShouldReturnNull()
     {
         // Arrange
@@ -517,7 +508,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         Assert.Null(result);
     }
     
-    [Fact]
+    [Fact(DisplayName = "AuthenticateUser when password does not match should return null")]
     public async Task AuthenticateUserWhenPasswordNotMatch_ShouldReturnNull()
     {
         // Arrange
@@ -534,7 +525,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         Assert.Null(result);
     }
     
-    [Fact]
+    [Fact(DisplayName = "AuthenticateUser when password match should return user")]
     public async Task AuthenticateUserWhenPasswordMatch_ShouldReturnUser()
     {
         // Arrange
@@ -551,7 +542,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         Assert.Equal(user, result);
     }
     
-    [Fact]
+    [Fact(DisplayName = "HashPassword returns different from password hash string")]
     public void HashPassword_ShouldReturnHash()
     {
         // Arrange
@@ -564,7 +555,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         Assert.NotEqual(password, result);
     }
     
-    [Fact]
+    [Fact(DisplayName = "VerifyPassword when password match should return true")]
     public void VerifyPasswordWhenPasswordMatch_ShouldReturnTrue()
     {
         // Arrange
@@ -578,7 +569,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         Assert.True(result);
     }
     
-    [Fact]
+    [Fact(DisplayName = "VerifyPassword when password not match should return false")]
     public void VerifyPasswordWhenPasswordNotMatch_ShouldReturnFalse()
     {
         // Arrange
@@ -593,6 +584,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
     }
 
 
+    [AllureAfter("Verify and reset all mocks")]
     public void Dispose()
     {
         _mocks.VerifyAll();

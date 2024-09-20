@@ -1,8 +1,13 @@
-﻿namespace Xellarium.Shared.Test;
+﻿using Allure.Xunit.Attributes;
 
+namespace Xellarium.Shared.Test;
+
+[AllureParentSuite("Shared Logic")]
+[AllureSuite("Utils")]
+[AllureSubSuite("Utils methods")]
 public class UtilsTests
 {
-    [Theory]
+    [Theory(DisplayName = "GetCyclicIndex returns correct value")]
     [InlineData(0, 5, 0)]
     [InlineData(1, 5, 1)]
     [InlineData(5, 5, 0)]
@@ -79,7 +84,7 @@ public class UtilsTests
             },
         };
     
-    [Theory]
+    [Theory(DisplayName = "ZeroPadding returns correct zero-padded array")]
     [MemberData(nameof(ZeroPaddingData))]
     public void ZeroPadding_ShouldReturnCorrectValue(int[][] array, int padding, int[][] expected)
     {
