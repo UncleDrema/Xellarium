@@ -5,7 +5,7 @@ namespace Xellarium.BusinessLogic.Test;
 public class CollectionBuilder
 {
     private List<Rule> _rules = new();
-    private User _user = new User();
+    private User _user = ObjectMother.SimpleUser();
     private bool _isPrivate = false;
     private int _id = 0;
     private string _name = string.Empty;

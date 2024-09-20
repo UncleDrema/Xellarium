@@ -16,6 +16,7 @@ public class XellariumContext : DbContext
     public DbSet<User> Users { get; set; } = null!;
     public DbSet<Rule> Rules { get; set; } = null!;
     public DbSet<Collection> Collections { get; set; } = null!;
+    public DbSet<Neighborhood> Neighborhoods { get; set; } = null!;
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

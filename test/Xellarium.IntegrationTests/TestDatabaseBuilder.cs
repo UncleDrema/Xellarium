@@ -30,6 +30,12 @@ public class TestDatabaseBuilder
         return this;
     }
     
+    public TestDatabaseBuilder WithNeighborhoods(IEnumerable<Neighborhood> neighborhoods)
+    {
+        _context.Neighborhoods.AddRange(neighborhoods);
+        return this;
+    }
+    
     public TestDatabaseBuilder WithRules(IEnumerable<Rule> rules)
     {
         _context.Rules.AddRange(rules);

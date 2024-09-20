@@ -1,0 +1,12 @@
+version: '3'
+services:
+  postgres:
+    image: postgres:15
+    container_name: xellarium-db
+    environment:
+      - POSTGRES_USER=uncledrema
+      - POSTGRES_PASSWORD=dremakorol
+    volumes:
+      - C:\Users\missl\Education\web\docker\database\data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"

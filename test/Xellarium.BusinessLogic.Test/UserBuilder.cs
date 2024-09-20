@@ -64,7 +64,7 @@ public class UserBuilder
     
     public User Build()
     {
-        return new User
+        var res =  new User
         {
             Id = _id,
             WarningsCount = _warningsCount,
@@ -75,5 +75,17 @@ public class UserBuilder
             Rules = _rules,
             Collections = _collections
         };
+        
+        foreach (var rule in _rules)
+        {
+            rule.Owner = res;
+        }
+        
+        foreach (var collection in _collections)
+        {
+            collection.Owner = res;
+        }
+        
+        return res;
     }
 }

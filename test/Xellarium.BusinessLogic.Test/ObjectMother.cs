@@ -9,7 +9,36 @@ public static class ObjectMother
     
     public static Rule SimpleRule()
     {
-        return new Rule();
+        return new Rule
+        {
+            Id = 0,
+            IsDeleted = false,
+            DeletedAt = null,
+            CreatedAt = default,
+            UpdatedAt = default,
+            GenericRule = new GenericRule(),
+            Name = "Simple Rule",
+            Owner = null,
+            NeighborhoodId = 0,
+            Collections = new List<Collection>()
+        };
+    }
+    
+    public static Rule SimpleRule(int nId)
+    {
+        return new Rule
+        {
+            Id = 0,
+            IsDeleted = false,
+            DeletedAt = null,
+            CreatedAt = default,
+            UpdatedAt = default,
+            GenericRule = new GenericRule(),
+            Name = "Simple Rule",
+            Owner = null,
+            NeighborhoodId = nId,
+            Collections = new List<Collection>()
+        };
     }
 
     public static Collection EmptyCollection()
@@ -20,6 +49,11 @@ public static class ObjectMother
     public static User SimpleUser()
     {
         return new User();
+    }
+    
+    public static Neighborhood SimpleNeighborhood()
+    {
+        return new Neighborhood();
     }
 
     public static BaseModel SimpleBaseModel()

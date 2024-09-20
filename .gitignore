@@ -5,6 +5,7 @@ _ReSharper.*
 packages/
 diagrams/
 artifacts/
+docker/database/data
 allure-results/
 test/allure-report/*
 !test/allure-report/history/
