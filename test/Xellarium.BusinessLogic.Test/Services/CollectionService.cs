@@ -25,8 +25,9 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
     public async Task GetCollections_ReturnsAllNotDeletedCollections()
     {
         // Arrange
-        var col1 = new Collection();
-        var col2 = new Collection() { IsDeleted = true };
+        var col1 = ObjectMother.EmptyCollection();
+        var col2 = ObjectMother.EmptyCollection();
+        col2.Delete();
         _mocks.CollectionRepositoryMock.Setup(repo => repo.GetAll(false)).ReturnsAsync([col1]);
 
         // Act
@@ -40,7 +41,7 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
     public async Task GetCollection_ReturnsCollection_WhenExists()
     {
         // Arrange
-        var collection = new Collection();
+        var collection = ObjectMother.EmptyCollection();
         _mocks.CollectionRepositoryMock.Setup(repo => repo.Get(It.IsAny<int>(), false)).ReturnsAsync(collection);
 
         // Act
@@ -54,7 +55,7 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
     public async Task AddCollection_AddsNewCollection()
     {
         // Arrange
-        var collection = new Collection();
+        var collection = ObjectMother.EmptyCollection();
         _mocks.CollectionRepositoryMock.Setup(repo => repo.Add(collection, true)).Returns(Task.FromResult(collection));
 
         // Act
@@ -68,7 +69,7 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
     public async Task UpdateCollection_UpdatesCollection()
     {
         // Arrange
-        var collection = new Collection();
+        var collection = ObjectMother.EmptyCollection();
         _mocks.CollectionRepositoryMock.Setup(repo => repo.Exists(collection.Id, false)).ReturnsAsync(true);
         _mocks.CollectionRepositoryMock.Setup(repo => repo.Update(collection)).Returns(Task.CompletedTask);
 
@@ -83,7 +84,7 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
     public async Task DeleteCollection_SoftDeletesCollection()
     {
         // Arrange
-        var collection = new Collection();
+        var collection = ObjectMother.EmptyCollection();
         _mocks.CollectionRepositoryMock.Setup(repo => repo.Get(It.IsAny<int>(), true)).ReturnsAsync(collection);
         _mocks.CollectionRepositoryMock.Setup(repo => repo.SoftDelete(It.IsAny<int>())).Returns(Task.CompletedTask);
 
@@ -98,8 +99,8 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
     public async Task AddRule_AddsNewRule()
     {
         // Arrange
-        var rule = new Rule();
-        var collection = new Collection();
+        var rule = ObjectMother.SimpleRule();
+        var collection = ObjectMother.EmptyCollection();
         _mocks.CollectionRepositoryMock.Setup(repo => repo.Get(It.IsAny<int>(), false)).ReturnsAsync(collection);
 
         // Act
@@ -114,8 +115,8 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
     public async Task RemoveRule_RemovesRule()
     {
         // Arrange
-        var rule = new Rule();
-        var collection = new Collection();
+        var rule = ObjectMother.SimpleRule();
+        var collection = ObjectMother.EmptyCollection();
         collection.AddRule(rule);
         _mocks.CollectionRepositoryMock.Setup(repo => repo.Get(It.IsAny<int>(), false)).ReturnsAsync(collection);
 
@@ -132,7 +133,7 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
     public async Task SetPrivacy_SetsPrivacy(bool isPrivate)
     {
         // Arrange
-        var collection = new Collection();
+        var collection = ObjectMother.EmptyCollection();
         _mocks.CollectionRepositoryMock.Setup(repo => repo.Get(It.IsAny<int>(), false)).ReturnsAsync(collection);
         _mocks.CollectionRepositoryMock.Setup(repo => repo.Update(collection)).Returns(Task.CompletedTask);
 
@@ -187,9 +188,9 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
     public async Task GetRuleCollections_ReturnsCollectionsWithRule()
     {
         // Arrange
-        var col1 = new Collection();
-        var col2 = new Collection();
-        var rule = new Rule();
+        var col1 = ObjectMother.EmptyCollection();
+        var col2 = ObjectMother.EmptyCollection();
+        var rule = ObjectMother.SimpleRule();
         col1.AddRule(rule);
         col2.AddRule(rule);
         

@@ -30,7 +30,9 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
     {
         // Arrange
         var userId = 1;
-        var user = new User { Id = userId };
+        var user = new UserBuilder()
+            .WithId(userId)
+            .Build();
         
         _mocks.UserRepositoryMock.Setup(x => x.Get(userId, false)).ReturnsAsync(user);
         
@@ -59,7 +61,10 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
     {
         // Arrange
         var userId = 1;
-        var user = new User { Id = userId, IsDeleted = true };
+        var user = new UserBuilder()
+            .WithId(userId)
+            .Build();
+        user.Delete();
 
         _mocks.UserRepositoryMock.Setup(x => x.Add(user, true));
         
@@ -75,7 +80,9 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
     public async Task AddUser_WhenUserNotExists_ShouldAddUser()
     {
         // Arrange
-        var user = new User { Id = 1 };
+        var user = new UserBuilder()
+            .WithId(1)
+            .Build();
         
         _mocks.UserRepositoryMock.Setup(x => x.Exists(user.Id, false)).ReturnsAsync(false);
         _mocks.UserRepositoryMock.Setup(x => x.Add(user, true));
@@ -91,7 +98,9 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
     public async Task AddUser_WhenUserExists_ShouldNotAddUser()
     {
         // Arrange
-        var user = new User { Id = 1 };
+        var user = new UserBuilder()
+            .WithId(1)
+            .Build();
         
         _mocks.UserRepositoryMock.Setup(x => x.Exists(user.Id, false)).ReturnsAsync(true);
         
@@ -106,7 +115,9 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
     public async Task UpdateUser_WhenUserExists_ShouldUpdateUser()
     {
         // Arrange
-        var user = new User { Id = 1 };
+        var user = new UserBuilder()
+            .WithId(1)
+            .Build();
         
         _mocks.UserRepositoryMock.Setup(x => x.Exists(user.Id, false)).ReturnsAsync(true);
         _mocks.UserRepositoryMock.Setup(x => x.Update(user));
@@ -122,7 +133,9 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
     public async Task UpdateUser_WhenUserNotExists_ShouldNotUpdateUser()
     {
         // Arrange
-        var user = new User { Id = 1 };
+        var user = new UserBuilder()
+            .WithId(1)
+            .Build();
         
         _mocks.UserRepositoryMock.Setup(x => x.Exists(user.Id, false)).ReturnsAsync(false);
         
@@ -138,7 +151,9 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
     {
         // Arrange
         var userId = 1;
-        var user = new User { Id = userId, IsDeleted = false };
+        var user = new UserBuilder()
+            .WithId(1)
+            .Build();
         
         _mocks.UserRepositoryMock.Setup(x => x.Get(userId, true)).ReturnsAsync(user);
         _mocks.UserRepositoryMock.Setup(x => x.SoftDelete(userId));
@@ -170,7 +185,10 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
     {
         // Arrange
         var userId = 1;
-        var user = new User { Id = userId, IsDeleted = true };
+        var user = new UserBuilder()
+            .WithId(1)
+            .Build();
+        user.Delete();
         
         _mocks.UserRepositoryMock.Setup(x => x.Get(userId, true)).ReturnsAsync(user);
         
@@ -187,7 +205,10 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
     {
         // Arrange
         var userId = 1;
-        var user = new User { Id = userId, Collections = new List<Collection> { new Collection() } };
+        var user =new UserBuilder()
+            .WithId(userId)
+            .WithCollections(ObjectMother.EmptyCollection())
+            .Build();
         
         _mocks.UserRepositoryMock.Setup(x => x.Get(userId, false)).ReturnsAsync(user);
         
@@ -216,19 +237,14 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
     {
         // Arrange
         var userId = 1;
-        var rule = new Rule();
-        var user = new User
-        {
-            Id = userId,
-            Collections = new List<Collection>
-            {
-                new Collection
-                {
-                    Rules = new List<Rule> { rule }
-                }
-            },
-            Rules = new List<Rule>() {rule}
-        };
+        var rule = ObjectMother.SimpleRule();
+        var user = new UserBuilder()
+            .WithId(userId)
+            .WithCollections(new CollectionBuilder()
+                .WithRules(rule)
+                .Build())
+            .WithRules(rule)
+            .Build();
         
         _mocks.UserRepositoryMock.Setup(x => x.Get(userId, false)).ReturnsAsync(user);
         
@@ -244,23 +260,17 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
     {
         // Arrange
         var userId = 1;
-        var rule = new Rule();
-        var user = new User
-        {
-            Id = userId,
-            Collections = new List<Collection>
-            {
-                new Collection
-                {
-                    Rules = new List<Rule> { rule }
-                },
-                new Collection
-                {
-                    Rules = new List<Rule> { rule }
-                }
-            },
-            Rules = new List<Rule>() {rule}
-        };
+        var rule = ObjectMother.SimpleRule();
+        var user = new UserBuilder()
+            .WithId(userId)
+            .WithCollections(new CollectionBuilder()
+                    .WithRules(rule)
+                    .Build(),
+                new CollectionBuilder()
+                    .WithRules(rule)
+                    .Build())
+            .WithRules(rule)
+            .Build();
         
         _mocks.UserRepositoryMock.Setup(x => x.Get(userId, false)).ReturnsAsync(user);
         
@@ -278,7 +288,10 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         var userId = 1;
         
         // Act
-        await Assert.ThrowsAsync<ArgumentException>(() => _userService.GetUserRules(userId));
+        var action = () => _userService.GetUserRules(userId);
+        
+        // Assert
+        await Assert.ThrowsAsync<ArgumentException>(action);
     }
     
     [Fact(DisplayName = "WarnUser adds warning when user exists")]
@@ -286,7 +299,9 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
     {
         // Arrange
         var userId = 1;
-        var user = new User { Id = userId };
+        var user = new UserBuilder()
+            .WithId(userId)
+            .Build();
         
         _mocks.UserRepositoryMock.Setup(x => x.Get(userId, false)).ReturnsAsync(user);
         _mocks.UserRepositoryMock.Setup(x => x.Update(user));
@@ -308,7 +323,10 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         var userId = 1;
         
         // Act
-        await Assert.ThrowsAsync<ArgumentException>(() => _userService.WarnUser(userId));
+        var action = () => _userService.WarnUser(userId);
+        
+        // Assert
+        await Assert.ThrowsAsync<ArgumentException>(action);
     }
     
     [Fact(DisplayName = "UserExists when user exists should return true")]
@@ -360,7 +378,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
     public async Task GetUsers_WhenUsersExists_ShouldReturnUsers()
     {
         // Arrange
-        var users = new List<User> { new User(), new User() };
+        var users = new List<User> { ObjectMother.SimpleUser(), ObjectMother.SimpleUser() };
         
         _mocks.UserRepositoryMock.Setup(x => x.GetAll(false)).ReturnsAsync(users);
         
@@ -389,7 +407,9 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
     {
         // Arrange
         var name = "name";
-        var user = new User { Name = name };
+        var user = new UserBuilder()
+            .WithName(name)
+            .Build();
         
         _mocks.UserRepositoryMock.Setup(x => x.GetByName(name)).ReturnsAsync(user);
         
@@ -419,9 +439,13 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         // Arrange
         var userId = 1;
         var collectionId = 1;
-        var collection = new Collection { Id = collectionId };
-        var user = new User { Id = userId, Collections = new List<Collection> { collection } };
-        collection.Owner = user;
+        var collection = new CollectionBuilder()
+            .WithId(collectionId)
+            .Build();
+        var user = new UserBuilder()
+            .WithId(userId)
+            .WithCollections(collection)
+            .Build();
         
         _mocks.UserRepositoryMock.Setup(x => x.Get(userId, false)).ReturnsAsync(user);
         _mocks.CollectionRepositoryMock.Setup(x => x.Get(collectionId, false)).ReturnsAsync(collection);
@@ -439,7 +463,9 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         // Arrange
         var userId = 1;
         var collectionId = 1;
-        var user = new User { Id = userId, Collections = new List<Collection>() };
+        var user = new UserBuilder()
+            .WithId(userId)
+            .Build();
         
         _mocks.UserRepositoryMock.Setup(x => x.Get(userId, false)).ReturnsAsync(user);
         
@@ -455,7 +481,9 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
     {
         // Arrange
         var name = "name";
-        var user = new User { Name = name };
+        var user = new UserBuilder()
+            .WithName(name)
+            .Build();
         
         _mocks.UserRepositoryMock.Setup(x => x.GetByName(name)).ReturnsAsync(user);
         

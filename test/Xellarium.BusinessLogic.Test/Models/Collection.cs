@@ -78,11 +78,11 @@ public class CollectionTests
     {
         // Arrange
         var collection = _builder
-            .WithRules(new Rule())
+            .WithRules(ObjectMother.SimpleRule())
             .Build();
         
         // Act
-        var action = () => collection.RemoveRule(new Rule());
+        var action = () => collection.RemoveRule(ObjectMother.SimpleRule());
         
         // Assert
         Assert.Throws<InvalidOperationException>(action);

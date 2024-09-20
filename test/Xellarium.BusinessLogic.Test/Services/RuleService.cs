@@ -25,8 +25,9 @@ public class RuleServiceTests : IDisposable, IClassFixture<RepositoryMocks>
     public async Task GetRules_ReturnsAllNotDeletedRules()
     {
         // Arrange
-        var rule1 = new Rule();
-        var rule2 = new Rule() { IsDeleted = true };
+        var rule1 = ObjectMother.SimpleRule();
+        var rule2 = ObjectMother.SimpleRule();
+        rule2.Delete();
         _mocks.RuleRepositoryMock.Setup(repo => repo.GetAll(false)).ReturnsAsync([rule1]);
 
         // Act
@@ -40,7 +41,7 @@ public class RuleServiceTests : IDisposable, IClassFixture<RepositoryMocks>
     public async Task GetRule_ReturnsRule_WhenExists()
     {
         // Arrange
-        var rule = new Rule();
+        var rule = ObjectMother.SimpleRule();
         _mocks.RuleRepositoryMock.Setup(repo => repo.Get(It.IsAny<int>(), false)).ReturnsAsync(rule);
 
         // Act
@@ -54,7 +55,7 @@ public class RuleServiceTests : IDisposable, IClassFixture<RepositoryMocks>
     public async Task AddRule_AddsNewRule()
     {
         // Arrange
-        var rule = new Rule();
+        var rule = ObjectMother.SimpleRule();
         _mocks.RuleRepositoryMock.Setup(repo => repo.Add(rule, true)).Returns(Task.FromResult(rule));
 
         // Act
@@ -68,7 +69,7 @@ public class RuleServiceTests : IDisposable, IClassFixture<RepositoryMocks>
     public async Task UpdateRule_UpdatesRule()
     {
         // Arrange
-        var rule = new Rule();
+        var rule = ObjectMother.SimpleRule();
         _mocks.RuleRepositoryMock.Setup(repo => repo.Exists(rule.Id, false)).ReturnsAsync(true);
         _mocks.RuleRepositoryMock.Setup(repo => repo.Update(rule)).Returns(Task.CompletedTask);
 
@@ -83,7 +84,7 @@ public class RuleServiceTests : IDisposable, IClassFixture<RepositoryMocks>
     public async Task DeleteRule_SoftDeletesRule()
     {
         // Arrange
-        var rule = new Rule();
+        var rule = ObjectMother.SimpleRule();
         _mocks.RuleRepositoryMock.Setup(repo => repo.Get(It.IsAny<int>(), true)).ReturnsAsync(rule);
         _mocks.RuleRepositoryMock.Setup(repo => repo.SoftDelete(It.IsAny<int>())).Returns(Task.CompletedTask);
 
@@ -98,9 +99,11 @@ public class RuleServiceTests : IDisposable, IClassFixture<RepositoryMocks>
     public async Task GetCollectionRules_ReturnsAllRulesOfCollection()
     {
         // Arrange
-        var rule1 = new Rule();
-        var rule2 = new Rule();
-        var collection = new Collection() { Rules = [rule1, rule2] };
+        var rule1 = ObjectMother.SimpleRule();
+        var rule2 = ObjectMother.SimpleRule();
+        var collection = new CollectionBuilder()
+            .WithRules(rule1, rule2)
+            .Build();
         _mocks.CollectionRepositoryMock.Setup(repo => repo.Get(It.IsAny<int>(), false)).ReturnsAsync(collection);
         
         // Act
@@ -114,7 +117,7 @@ public class RuleServiceTests : IDisposable, IClassFixture<RepositoryMocks>
     public async Task RuleExists_ReturnsTrue_WhenRuleExists()
     {
         // Arrange
-        var rule = new Rule();
+        var rule = ObjectMother.SimpleRule();
         _mocks.RuleRepositoryMock.Setup(repo => repo.Exists(rule.Id, false)).ReturnsAsync(true);
 
         // Act
@@ -128,7 +131,11 @@ public class RuleServiceTests : IDisposable, IClassFixture<RepositoryMocks>
     public async Task GetOwner_ReturnsOwner()
     {
         // Arrange
-        var rule = new Rule() { Owner = new User() { Id = 1 }};
+        var rule = new RuleBuilder()
+            .WithOwner(new UserBuilder()
+                .WithId(1)
+                .Build())
+            .Build();
         _mocks.RuleRepositoryMock.Setup(repo => repo.Get(It.IsAny<int>(), false)).ReturnsAsync(rule);
 
         // Act

@@ -7,13 +7,13 @@ namespace Xellarium.BusinessLogic.Test.Services;
 [AllureParentSuite("Business Logic")]
 [AllureSuite("Services")]
 [AllureSubSuite("RuleService Classic")]
-public class RuleServiceClassic : IDisposable
+public class RuleServiceClassicTests : IDisposable
 {
     private readonly DatabaseFixture _databaseFixture;
     private readonly RuleService _ruleService;
     
     [AllureBefore("Connect to database")]
-    public RuleServiceClassic()
+    public RuleServiceClassicTests()
     {
         _databaseFixture = new DatabaseFixture();
         

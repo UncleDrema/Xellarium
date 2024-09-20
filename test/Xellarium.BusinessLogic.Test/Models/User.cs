@@ -76,7 +76,7 @@ public class UserTests
     {
         // Arrange
         var user = new UserBuilder().Build();
-        var collection = new Collection();
+        var collection = ObjectMother.EmptyCollection();
         
         // Act
         user.AddCollection(collection);
@@ -104,7 +104,7 @@ public class UserTests
     {
         // Arrange
         var user = new UserBuilder().Build();
-        var rule = new Rule();
+        var rule = ObjectMother.SimpleRule();
         
         // Act
         user.AddRule(rule);
