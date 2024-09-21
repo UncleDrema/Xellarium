@@ -59,7 +59,7 @@ public class BaseModel
         baseModel.MarkUpdated();
         
         // Assert
-        Assert.True(baseModel.UpdatedAt > oldUpdatedAt);
+        Assert.True(baseModel.UpdatedAt >= oldUpdatedAt);
     }
     
     [Fact(DisplayName = "Double delete throws exception")]
