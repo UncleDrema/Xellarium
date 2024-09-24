@@ -5,12 +5,13 @@ using Xellarium.BusinessLogic.Models;
 using Xellarium.BusinessLogic.Services;
 using Xellarium.DataAccess.Models;
 using Xellarium.DataAccess.Repository;
+using Xunit.Abstractions;
 
 namespace Xellarium.IntegrationTests;
 
 [AllureParentSuite("Intergration tests")]
 [AllureSuite("User")]
-public class UserTests
+public class AuthenticationTests
 {
     [Fact(DisplayName = "Registration works")]
     public async Task TestRegistrationWorks()
@@ -19,23 +20,23 @@ public class UserTests
         await using var context = new TestDatabaseBuilder()
             .Build();
         
-        var service = GetService(context);
+        var (userService, authService) = GetServices(context);
         
         AllureApi.Step("Register user");
-        var user = await service.RegisterUser("user", "password");
+        var user = await authService.RegisterUser("user", "password");
         
         AllureApi.Step("Assert user is created");
         Assert.NotNull(user);
         
         AllureApi.Step("Assert user is in database");
-        var allUsers = (await service.GetUsers()).ToList();
+        var allUsers = (await userService.GetUsers()).ToList();
         
         AllureApi.Step("Assert use name is correct");
         Assert.Single(allUsers);
         Assert.Equal("user", allUsers.First().Name);
         
         AllureApi.Step("Assert user can be retrieved by id");
-        var userById = await service.GetUser(user.Id);
+        var userById = await userService.GetUser(user.Id);
         
         Assert.NotNull(userById);
         Assert.Equal("user", userById.Name);
@@ -56,10 +57,12 @@ public class UserTests
             })
             .Build();
         
-        var service = GetService(context);
+        var (userService, authService) = GetServices(context);
+        
+        var user = await userService.GetUserByName("user");
         
         AllureApi.Step("Assert exception is thrown");
-        await Assert.ThrowsAsync<ArgumentException>(() => service.RegisterUser("user", "password"));
+        await Assert.ThrowsAsync<ArgumentException>(() => authService.RegisterUser("user", "password"));
     }
     
     [Fact(DisplayName = "Authentication works")]
@@ -69,13 +72,13 @@ public class UserTests
         await using var context = new TestDatabaseBuilder()
             .Build();
         
-        var service = GetService(context);
+        var (userService, authService) = GetServices(context);
         
         AllureApi.Step("Register user");
-        await service.RegisterUser("user", "password");
+        await authService.RegisterUser("user", "password");
         
         AllureApi.Step("Try authenticate user");
-        var user = await service.AuthenticateUser("user", "password");
+        var user = await authService.AuthenticateUser("user", "password");
         
         AllureApi.Step("Assert user is authenticated and retrieved correctly");
         Assert.NotNull(user);
@@ -89,26 +92,27 @@ public class UserTests
         await using var context = new TestDatabaseBuilder()
             .Build();
         
-        var service = GetService(context);
+        var (userService, authService) = GetServices(context);
         
         AllureApi.Step("Register user");
-        await service.RegisterUser("user", "password");
+        await authService.RegisterUser("user", "password");
         
         AllureApi.Step("Try authenticate user with wrong password");
-        var user = await service.AuthenticateUser("user", "wrongpassword");
+        var user = await authService.AuthenticateUser("user", "wrongpassword");
         
         AllureApi.Step("Assert user is not authenticated");
         Assert.Null(user);
     }
 
-    [AllureStep("Create user serivce")]
-    private UserService GetService(XellariumContext context)
+    [AllureStep("Create user and authentication serivces")]
+    private (IUserService, IAuthenticationService) GetServices(XellariumContext context)
     {
         var userRepository = new UserRepository(context);
         var collectionRepository = new CollectionRepository(context);
         var ruleRepository = new RuleRepository(context);
         var neighborhoodRepository = new NeighborhoodRepository(context);
-        var service = new UserService(userRepository, collectionRepository, ruleRepository, neighborhoodRepository);
-        return service;
+        var userService = new UserService(userRepository, collectionRepository, ruleRepository, neighborhoodRepository);
+        var authService = new AuthenticationService(userService);
+        return (userService, authService);
     }
 }

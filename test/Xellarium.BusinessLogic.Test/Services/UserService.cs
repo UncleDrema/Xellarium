@@ -402,8 +402,8 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         Assert.Empty(result);
     }
     
-    [Fact(DisplayName = "NameExists when name exists should return true")]
-    public async Task NameExists_WhenNameExists_ShouldReturnTrue()
+    [Fact(DisplayName = "UserExists when name exists should return true")]
+    public async Task UserExists_WhenNameExists_ShouldReturnTrue()
     {
         // Arrange
         var name = "name";
@@ -414,20 +414,20 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         _mocks.UserRepositoryMock.Setup(x => x.GetByName(name)).ReturnsAsync(user);
         
         // Act
-        var result = await _userService.NameExists(name);
+        var result = await _userService.UserExists(name);
         
         // Assert
         Assert.True(result);
     }
     
-    [Fact(DisplayName = "NameExists when name not exists should return false")]
-    public async Task NameExists_WhenNameNotExists_ShouldReturnFalse()
+    [Fact(DisplayName = "UserExists when name not exists should return false")]
+    public async Task UserExists_WhenNameNotExists_ShouldReturnFalse()
     {
         // Arrange
         var name = "name";
         
         // Act
-        var result = await _userService.NameExists(name);
+        var result = await _userService.UserExists(name);
         
         // Assert
         Assert.False(result);
@@ -474,141 +474,6 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         
         // Assert
         Assert.Null(result);
-    }
-    
-    [Fact(DisplayName = "RegisterUser when user exists should throw ArgumentException")]
-    public async Task RegisterUserWhenUserExists_ShouldThrowArgumentException()
-    {
-        // Arrange
-        var name = "name";
-        var user = new UserBuilder()
-            .WithName(name)
-            .Build();
-        
-        _mocks.UserRepositoryMock.Setup(x => x.GetByName(name)).ReturnsAsync(user);
-        
-        // Act
-        var action = () => _userService.RegisterUser(name, "password");
-        
-        // Assert
-        await Assert.ThrowsAsync<ArgumentException>(action);
-    }
-    
-    [Fact(DisplayName = "RegisterUser when password is empty should throw ArgumentException")]
-    public async Task RegisterUserWhenPasswordIsEmpty_ShouldThrowArgumentException()
-    {
-        // Arrange
-        var name = "name";
-        
-        // Act
-        var action = () => _userService.RegisterUser(name, "");
-        
-        // Assert
-        await Assert.ThrowsAsync<ArgumentException>(action);
-    }
-    
-    [Fact(DisplayName = "RegisterUser when user not exists should add user")]
-    public async Task RegisterUserWhenUserNotExists_ShouldAddUser()
-    {
-        // Arrange
-        var name = "name";
-        var password = "password";
-        
-        _mocks.UserRepositoryMock.Setup(x => x.Add(It.IsAny<User>(), true));
-        
-        // Act
-        await _userService.RegisterUser(name, password);
-        
-        // Assert
-        _mocks.UserRepositoryMock.Verify(x => x.Add(It.IsAny<User>(), true), Times.Once);
-    }
-    
-    [Fact(DisplayName = "AuthenticateUser when user not exists should return null")]
-    public async Task AuthenticateUserWhenUserNotExists_ShouldReturnNull()
-    {
-        // Arrange
-        var name = "name";
-        
-        // Act
-        var result = await _userService.AuthenticateUser(name, "password");
-        
-        // Assert
-        Assert.Null(result);
-    }
-    
-    [Fact(DisplayName = "AuthenticateUser when password does not match should return null")]
-    public async Task AuthenticateUserWhenPasswordNotMatch_ShouldReturnNull()
-    {
-        // Arrange
-        var name = "name";
-        var password = "password";
-        var user = await _userService.RegisterUser(name, password);
-        
-        _mocks.UserRepositoryMock.Setup(x => x.GetByName(name)).ReturnsAsync(user);
-        
-        // Act
-        var result = await _userService.AuthenticateUser(name, "notMyPassword");
-        
-        // Assert
-        Assert.Null(result);
-    }
-    
-    [Fact(DisplayName = "AuthenticateUser when password match should return user")]
-    public async Task AuthenticateUserWhenPasswordMatch_ShouldReturnUser()
-    {
-        // Arrange
-        var name = "name";
-        var password = "password";
-        var user = await _userService.RegisterUser(name, password);
-        
-        _mocks.UserRepositoryMock.Setup(x => x.GetByName(name)).ReturnsAsync(user);
-        
-        // Act
-        var result = await _userService.AuthenticateUser(name, password);
-        
-        // Assert
-        Assert.Equal(user, result);
-    }
-    
-    [Fact(DisplayName = "HashPassword returns different from password hash string")]
-    public void HashPassword_ShouldReturnHash()
-    {
-        // Arrange
-        var password = "password";
-        
-        // Act
-        var result = _userService.HashPassword(password);
-        
-        // Assert
-        Assert.NotEqual(password, result);
-    }
-    
-    [Fact(DisplayName = "VerifyPassword when password match should return true")]
-    public void VerifyPasswordWhenPasswordMatch_ShouldReturnTrue()
-    {
-        // Arrange
-        var password = "password";
-        var hash = _userService.HashPassword(password);
-        
-        // Act
-        var result = _userService.VerifyPassword(password, hash);
-        
-        // Assert
-        Assert.True(result);
-    }
-    
-    [Fact(DisplayName = "VerifyPassword when password not match should return false")]
-    public void VerifyPasswordWhenPasswordNotMatch_ShouldReturnFalse()
-    {
-        // Arrange
-        var password = "password";
-        var hash = _userService.HashPassword(password);
-        
-        // Act
-        var result = _userService.VerifyPassword("password1", hash);
-        
-        // Assert
-        Assert.False(result);
     }
 
 

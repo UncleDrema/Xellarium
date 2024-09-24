@@ -152,7 +152,7 @@ public static class ApiHelper
             Name = InputType<string>("Name"),
             IsPrivate = InputType<bool>("IsPrivate"),
             OwnerId = InputType<int>("OwnerId"),
-            Rules = InputType<List<int>>("RuleIds").ToList()
+            Rules = InputType<List<int>>("RuleIds").Select(i => new RuleReferenceDTO(){Id = i}).ToList()
         };
     }
     
@@ -164,7 +164,7 @@ public static class ApiHelper
             Name = InputType<string>("Name"),
             GenericRule = InputType<GenericRule>("GenericRule"),
             OwnerId = InputType<int>("OwnerId"),
-            Collections = InputType<List<int>>("CollectionIds").ToList()
+            Collections = InputType<List<int>>("CollectionIds").Select(i => new CollectionReferenceDTO(){Id = i}).ToList()
         };
     }
     
@@ -172,7 +172,6 @@ public static class ApiHelper
     {
         return new PostUserDTO()
         {
-            Id = InputType<int>("Id"),
             Name = InputType<string>("Name"),
             Password = InputType<string>("Password"),
             Role = InputType<UserRole>("Role")
@@ -183,7 +182,6 @@ public static class ApiHelper
     {
         return new PostCollectionDTO()
         {
-            Id = InputType<int>("Id"),
             Name = InputType<string>("Name"),
             IsPrivate = InputType<bool>("IsPrivate"),
         };
@@ -193,7 +191,6 @@ public static class ApiHelper
     {
         return new PostRuleDTO()
         {
-            Id = InputType<int>("Id"),
             Name = InputType<string>("Name"),
             GenericRule = InputType<GenericRule>("GenericRule"),
             NeighborhoodId = InputType<int>("NeighborhoodId")

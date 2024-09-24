@@ -18,7 +18,7 @@ public static class Cookies
     public const string AuthType = "Cookies";
     public const string CookieName = "UserLoginCookie";
 
-    public static async Task SignInUser(HttpContext ctx, User user)
+    public static async Task SignInUser(HttpContext ctx, BusinessLogic.Models.User user)
     {
         var claims = new List<Claim>
         {

@@ -24,10 +24,10 @@ public class RuleService : IRuleService
         return await _ruleRepository.Get(id);
     }
 
-    public async Task AddRule(Rule rule)
+    public async Task<Rule> AddRule(Rule rule)
     {
         if (await _ruleRepository.Exists(rule.Id)) throw new ArgumentException("Rule already exists");
-        await _ruleRepository.Add(rule);
+        return await _ruleRepository.Add(rule);
     }
 
     public async Task UpdateRule(Rule rule)

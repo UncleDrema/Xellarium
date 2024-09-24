@@ -16,6 +16,7 @@ public static class DataAccessConfiguration
         {
             var context = serviceScope.ServiceProvider.GetRequiredService<XellariumContext>();
             var userService = serviceScope.ServiceProvider.GetRequiredService<IUserService>();
+            var authenticationService = serviceScope.ServiceProvider.GetRequiredService<IAuthenticationService>();
             var ruleService = serviceScope.ServiceProvider.GetRequiredService<IRuleService>();
             var collectionService = serviceScope.ServiceProvider.GetRequiredService<ICollectionService>();
             var neighborhoodService = serviceScope.ServiceProvider.GetRequiredService<INeighborhoodService>();
@@ -34,7 +35,7 @@ public static class DataAccessConfiguration
                     Offsets = Neighborhood.MooreOffsets
                 });
                 
-                var user = await userService.RegisterUser("admin", "admin");
+                var user = await authenticationService.RegisterUser("admin", "admin");
                 user.Role = UserRole.Admin;
                 
                 var col = new Collection()

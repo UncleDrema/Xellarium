@@ -15,7 +15,8 @@ public interface IUserService
     Task<IEnumerable<Rule>> GetUserRules(int userId);
     Task WarnUser(int userId);
     Task<bool> UserExists(int id);
-    Task<bool> NameExists(string name);
+    Task<User?> GetUserByName(string name);
+    Task<bool> UserExists(string name);
     Task<Collection?> GetCollection(int collectionId);
     Task<Collection?> GetCollection(int userId, int collectionId);
     Task<IEnumerable<Rule>> GetCollectionRules(int userId, int collectionId);
@@ -25,8 +26,4 @@ public interface IUserService
     Task<Collection?> AddCollection(int id, Collection collection);
     Task<Rule?> AddRule(int userId, Rule rule);
     Task AddToCollection(int collectionId, Rule rule);
-    Task<User> RegisterUser(string name, string password);
-    Task<User?> AuthenticateUser(string name, string password);
-    string HashPassword(string password);
-    bool VerifyPassword(string password, string passwordHash);
 }

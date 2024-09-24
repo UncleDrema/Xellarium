@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Asp.Versioning;
 using AutoMapper;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -10,12 +11,14 @@ using Xellarium.BusinessLogic.Models;
 using Xellarium.BusinessLogic.Services;
 using Xellarium.Shared.DTO;
 using static Xellarium.Authentication.Policies;
+using IAuthenticationService = Xellarium.BusinessLogic.Services.IAuthenticationService;
 
-namespace Xellarium.WebApi.Controllers;
+namespace Xellarium.WebApi.V1;
 
-[Route("api/[controller]")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [ApiController]
-public class UserController(IUserService service, IMapper mapper,
+[ApiVersion("1.0", Deprecated = true)]
+public class UserController(IUserService service, IAuthenticationService authenticationService, IMapper mapper,
     ILogger<UserController> logger, BusinessLogicConfiguration configuration) : ControllerBase
 {
     #region AuthEndpoints
@@ -27,14 +30,14 @@ public class UserController(IUserService service, IMapper mapper,
     {
         logger.LogInformation("Requested registration of {@UserLogin}", userLoginDto);
         var (username, password) = (userLoginDto.Username, userLoginDto.Password);
-        if (await service.NameExists(username))
+        if (await service.UserExists(username))
         {
             logger.LogInformation("Register conflict, user already exists with name {Username}", username);
             return Conflict();
         }
 
-        var user = await service.RegisterUser(username, password);
-        var userDto = mapper.Map<User, UserDTO>(user);
+        var user = await authenticationService.RegisterUser(username, password);
+        var userDto = mapper.Map<BusinessLogic.Models.User, UserDTO>(user);
         logger.LogInformation("Successfully registered user {Username}", username);
         
         await Cookies.SignInUser(HttpContext, user);
@@ -48,7 +51,7 @@ public class UserController(IUserService service, IMapper mapper,
     {
         logger.LogInformation("Requested login of {@UserLogin}", userLoginDto);
         var (username, password) = (userLoginDto.Username, userLoginDto.Password);
-        var user = await service.AuthenticateUser(username, password);
+        var user = await authenticationService.AuthenticateUser(username, password);
         if (user == null)
         {
             logger.LogInformation("Failed authorization of {@UserLogin}", userLoginDto);
@@ -57,7 +60,7 @@ public class UserController(IUserService service, IMapper mapper,
         
         await Cookies.SignInUser(HttpContext, user);
         logger.LogInformation("User successfully authorized: {@UserLogin}", userLoginDto);
-        return Ok(mapper.Map<User, UserDTO>(user));
+        return Ok(mapper.Map<BusinessLogic.Models.User, UserDTO>(user));
     }
     
     // POST: api/User/logout
@@ -70,7 +73,7 @@ public class UserController(IUserService service, IMapper mapper,
     }
     
     #endregion
-
+    
     // GET: api/User/5
     [HttpGet("{id}")]
     [Authorize(Policy = AdminOrOwner)]
@@ -85,7 +88,7 @@ public class UserController(IUserService service, IMapper mapper,
             return NotFound();
         }
 
-        var userDto = mapper.Map<User, UserDTO>(user);
+        var userDto = mapper.Map<BusinessLogic.Models.User, UserDTO>(user);
         logger.LogInformation("Found user: {@UserDto}", userDto);
         return userDto;
     }
@@ -287,7 +290,7 @@ public class UserController(IUserService service, IMapper mapper,
             return NotFound();
         }
         
-        return Ok(mapper.Map<User, UserDTO>(user));
+        return Ok(mapper.Map<BusinessLogic.Models.User, UserDTO>(user));
     }
     
     // PUT: api/User/public_collections
@@ -313,7 +316,7 @@ public class UserController(IUserService service, IMapper mapper,
     {
         logger.LogInformation("Requested all users");
         var users = await service.GetUsers();
-        return Ok(users.Select(mapper.Map<User, UserDTO>));
+        return Ok(users.Select(mapper.Map<BusinessLogic.Models.User, UserDTO>));
     }
 
     // POST: api/User
@@ -322,23 +325,16 @@ public class UserController(IUserService service, IMapper mapper,
     public async Task<ActionResult<UserDTO>> PostUser([FromBody] PostUserDTO user)
     {
         logger.LogInformation("Requested post of user {@PostUserDto}", user);
-        // Проверить, что пользователь не существует
-        if (await service.UserExists(user.Id))
-        {
-            logger.LogInformation("User with id {Id} already exists!", user.Id);
-            return Conflict();
-        }
 
-        var realUser = new User()
+        var realUser = new BusinessLogic.Models.User()
         {
-            Id = user.Id,
             Name = user.Name,
-            PasswordHash = service.HashPassword(user.Password),
+            PasswordHash = authenticationService.HashPassword(user.Password),
             Role = user.Role,
         };
         await service.AddUser(realUser);
-        logger.LogInformation("Created new user with id {Id}", user.Id);
-        return CreatedAtAction(nameof(GetUser), new {id = user.Id}, user);
+        logger.LogInformation("Created new user with id {Id}", realUser.Id);
+        return CreatedAtAction(nameof(GetUser), new {id = realUser.Id}, mapper.Map<BusinessLogic.Models.User, UserDTO>(realUser));
     }
     
     // GET: api/User/5/public_collections
@@ -388,7 +384,7 @@ public class UserController(IUserService service, IMapper mapper,
 
         var storedUser = await service.GetUser(id);
 
-        var user = mapper.Map<UserDTO, User>(userDto);
+        var user = mapper.Map<UserDTO, BusinessLogic.Models.User>(userDto);
         user.CreatedAt = storedUser!.CreatedAt;
         user.DeletedAt = storedUser.DeletedAt;
         user.PasswordHash = storedUser.PasswordHash;
@@ -406,7 +402,6 @@ public class UserController(IUserService service, IMapper mapper,
         logger.LogInformation("Requested add of rule {@PostRuleDto} to collection {CollectionId} of user {Id}", postRuleDto, collectionId, id);
         var realRule = new Rule()
         {
-            Id = postRuleDto.Id,
             GenericRule = postRuleDto.GenericRule,
             Name = postRuleDto.Name,
             NeighborhoodId = postRuleDto.NeighborhoodId
@@ -437,7 +432,6 @@ public class UserController(IUserService service, IMapper mapper,
         }
         var realCollection = new Collection()
         {
-            Id = collectionPostDto.Id,
             Name = collectionPostDto.Name,
             IsPrivate = collectionPostDto.IsPrivate ?? configuration.CollectionsPrivateByDefault
         };

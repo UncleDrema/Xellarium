@@ -1,3 +1,5 @@
+using Asp.Versioning;
+using Asp.Versioning.ApiExplorer;
 using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.EntityFrameworkCore.Infrastructure.Internal;
@@ -11,7 +13,7 @@ using Xellarium.BusinessLogic.Repository;
 using Xellarium.BusinessLogic.Services;
 using Xellarium.DataAccess.Repository;
 using Xellarium.Shared;
-using Xellarium.WebApi.Controllers;
+using Xellarium.WebApi.V1;
 
 namespace Xellarium.Server;
 
@@ -73,6 +75,20 @@ public static class Program
         builder.Services.AddScoped<ICollectionService, CollectionService>();
         builder.Services.AddScoped<IRuleService, RuleService>();
         builder.Services.AddScoped<INeighborhoodService, NeighborhoodService>();
+        builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
+        
+        builder.Services.AddApiVersioning(opt =>
+        {
+            opt.ReportApiVersions = true;
+            opt.DefaultApiVersion = new ApiVersion(1, 0);
+            opt.AssumeDefaultVersionWhenUnspecified = true;
+            opt.ApiVersionReader = new UrlSegmentApiVersionReader();
+        })
+        .AddApiExplorer(opt =>
+        {
+            opt.GroupNameFormat = "'v'VVV";
+            opt.SubstituteApiVersionInUrl = true;
+        });
         
         builder.Services.AddHttpLogging(logging =>
         {
@@ -99,10 +115,11 @@ public static class Program
                     .SetIsOriginAllowed(_ => true)
                     .AllowCredentials()));
 
+        builder.Services.AddSwaggerGen();
+        builder.Services.ConfigureOptions<ConfigureSwaggerOptions>();
+
         builder.ConfigureMapping();
         builder.ConfigureAuthentication();
-        
-        builder.ConfigureSwagger();
 
         var app = builder.Build();
 
@@ -114,15 +131,23 @@ public static class Program
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
         {
+            app.UseDeveloperExceptionPage();
             app.UseSwagger();
-            app.UseSwaggerUI();
+            app.UseSwaggerUI(opt =>
+            {
+                var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
+                foreach (var description in provider.ApiVersionDescriptions)
+                {
+                    opt.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", $"Xellarium API {description.GroupName}");
+                }
+            });
         }
 
         app.UseHttpsRedirection();
-
-        app.MapControllers();
         
         app.UseAuthorization();
+
+        app.MapControllers();
 
         await app.RunAsync();
     }

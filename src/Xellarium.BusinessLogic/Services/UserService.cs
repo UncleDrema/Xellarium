@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Xellarium.BusinessLogic.Models;
+﻿using Xellarium.BusinessLogic.Models;
 using Xellarium.BusinessLogic.Repository;
 using Xellarium.Shared;
 
@@ -93,9 +92,14 @@ public class UserService : IUserService
         return _userRepository.Exists(id);
     }
     
-    public async Task<bool> NameExists(string name)
+    public async Task<User?> GetUserByName(string name)
     {
-        return await _userRepository.GetByName(name) != null;
+        return await _userRepository.GetByName(name);
+    }
+    
+    public async Task<bool> UserExists(string name)
+    {
+        return (await GetUserByName(name)) != null;
     }
 
     public async Task<Collection?> GetCollection(int collectionId)
@@ -169,38 +173,5 @@ public class UserService : IUserService
         if (collection == null) throw new ArgumentException("Collection not found");
         collection.AddRule(rule);
         await _collectionRepository.Update(collection);
-    }
-
-    public async Task<User> RegisterUser(string name, string password)
-    {
-        if (await NameExists(name)) throw new ArgumentException("User already exists");
-        if (string.IsNullOrWhiteSpace(password)) throw new ArgumentException("Password is empty");
-        
-        var user = new User {Name = name, PasswordHash = HashPassword(password)};
-        await AddUser(user);
-        return user;
-    }
-
-    public async Task<User?> AuthenticateUser(string name, string password)
-    {
-        var user = await _userRepository.GetByName(name);
-        if (user == null) return null;
-
-        if (VerifyPassword(password, user.PasswordHash))
-        {
-            return user;
-        }
-
-        return null;
-    }
-
-    public string HashPassword(string password)
-    {
-        return BCrypt.Net.BCrypt.HashPassword(password);
-    }
-
-    public bool VerifyPassword(string password, string passwordHash)
-    {
-        return BCrypt.Net.BCrypt.Verify(password, passwordHash);
     }
 }

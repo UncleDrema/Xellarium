@@ -121,7 +121,7 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
         _mocks.CollectionRepositoryMock.Setup(repo => repo.Get(It.IsAny<int>(), false)).ReturnsAsync(collection);
 
         // Act
-        await _collectionService.RemoveRule(collection.Id, rule);
+        await _collectionService.RemoveRule(collection.Id, rule.Id);
 
         // Assert
         Assert.DoesNotContain(rule, collection.Rules);

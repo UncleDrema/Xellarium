@@ -24,10 +24,10 @@ public class CollectionService : ICollectionService
         return await _collectionRepository.Get(id);
     }
 
-    public async Task AddCollection(Collection collection)
+    public async Task<Collection> AddCollection(Collection collection)
     {
         if (await _collectionRepository.Exists(collection.Id)) throw new ArgumentException("Collection already exists");
-        await _collectionRepository.Add(collection);
+        return await _collectionRepository.Add(collection);
     }
 
     public async Task UpdateCollection(Collection collection)
@@ -59,11 +59,12 @@ public class CollectionService : ICollectionService
         await _collectionRepository.Update(collection);
     }
     
-    public async Task RemoveRule(int collectionId, Rule rule)
+    public async Task RemoveRule(int collectionId, int ruleId)
     {
         var collection = await _collectionRepository.Get(collectionId);
         if (collection == null) return;
-        collection.RemoveRule(rule);
+        
+        collection.RemoveRule(collection.Rules.First(r => r.Id == ruleId));
         await _collectionRepository.Update(collection);
     }
     

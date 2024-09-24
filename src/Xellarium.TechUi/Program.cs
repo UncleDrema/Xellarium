@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
-using Xellarium.WebApi.Controllers;
+using Xellarium.WebApi.V1;
 
 namespace Xellarium.TechUi;
 
