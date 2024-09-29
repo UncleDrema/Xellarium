@@ -3,61 +3,56 @@ using Xellarium.BusinessLogic.Repository;
 
 namespace Xellarium.BusinessLogic.Services;
 
-public class RuleService : IRuleService
+public class RuleService(IUnitOfWork unitOfWork)
+    : IRuleService
 {
-    private readonly IRuleRepository _ruleRepository;
-    private readonly ICollectionRepository _collectionRepository;
-
-    public RuleService(IRuleRepository ruleRepository, ICollectionRepository collectionRepository)
-    {
-        _ruleRepository = ruleRepository;
-        _collectionRepository = collectionRepository;
-    }
-
     public async Task<IEnumerable<Rule>> GetRules()
     {
-        return await _ruleRepository.GetAll();
+        return await unitOfWork.Rules.GetAll();
     }
 
     public async Task<Rule?> GetRule(int id)
     {
-        return await _ruleRepository.Get(id);
+        return await unitOfWork.Rules.Get(id);
     }
 
-    public async Task<Rule> AddRule(Rule rule)
+    public async Task AddRule(Rule rule)
     {
-        if (await _ruleRepository.Exists(rule.Id)) throw new ArgumentException("Rule already exists");
-        return await _ruleRepository.Add(rule);
+        if (await unitOfWork.Rules.Exists(rule.Id)) throw new ArgumentException("Rule already exists");
+        await unitOfWork.Rules.Add(rule);
+        await unitOfWork.CompleteAsync();
     }
 
     public async Task UpdateRule(Rule rule)
     {
-        if (!await _ruleRepository.Exists(rule.Id)) throw new ArgumentException("Rule not found");
-        await _ruleRepository.Update(rule);
+        if (!await unitOfWork.Rules.Exists(rule.Id)) throw new ArgumentException("Rule not found");
+        await unitOfWork.Rules.Update(rule);
+        await unitOfWork.CompleteAsync();
     }
 
     public async Task DeleteRule(int id)
     {
-        var rule = await _ruleRepository.Get(id, true);
-        if (rule == null || rule.IsDeleted) throw new ArgumentException("Rule not found");
-        await _ruleRepository.SoftDelete(id);
+        var rule = await unitOfWork.Rules.Get(id);
+        if (rule == null) throw new ArgumentException("Rule not found");
+        await unitOfWork.Rules.SoftDelete(id);
+        await unitOfWork.CompleteAsync();
     }
-
-    public async Task<IEnumerable<Rule>> GetCollectionRules(int collectionId)
+    
+    public async Task<IEnumerable<Collection>> GetRuleCollections(int ruleId)
     {
-        var collection = await _collectionRepository.Get(collectionId);
-        if (collection == null) throw new ArgumentException("Collection not found");
-        return collection.Rules;
+        var rule = await unitOfWork.Rules.Get(ruleId);
+        if (rule == null) throw new ArgumentException("Rule not found");
+        return rule.Collections;
     }
 
     public Task<bool> RuleExists(int id)
     {
-        return _ruleRepository.Exists(id);
+        return unitOfWork.Rules.Exists(id);
     }
 
     public async Task<User?> GetOwner(int ruleId)
     {
-        var rule = await _ruleRepository.Get(ruleId);
+        var rule = await unitOfWork.Rules.Get(ruleId);
         return rule?.Owner;
     }
 }

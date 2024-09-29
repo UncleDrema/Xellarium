@@ -6,5 +6,5 @@ public class CollectionDTO
     public string Name { get; set; }
     public bool IsPrivate { get; set; }
     public int OwnerId { get; set; }
-    public List<RuleReferenceDTO> Rules { get; set; }
+    public List<RuleReferenceDTO> RuleReferences { get; set; }
 }

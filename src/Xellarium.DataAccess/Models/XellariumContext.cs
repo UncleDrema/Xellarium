@@ -2,6 +2,7 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.Extensions.Logging;
 using Xellarium.BusinessLogic.Models;
 using Xellarium.Shared;
 
@@ -26,14 +27,6 @@ public class XellariumContext : DbContext
         modelBuilder.Entity<User>()
             .Property(u => u.Id)
             .ValueGeneratedOnAdd();
-
-        modelBuilder.Entity<User>()
-            .Navigation(u => u.Collections)
-            .AutoInclude();
-
-        modelBuilder.Entity<User>()
-            .Navigation(u => u.Rules)
-            .AutoInclude();
 
         modelBuilder.Entity<User>()
                     .HasMany(u => u.Collections)
@@ -70,9 +63,8 @@ public class XellariumContext : DbContext
             .ValueGeneratedOnAdd();
 
         modelBuilder.Entity<Rule>()
-            .HasOne(typeof(Neighborhood))
-            .WithMany()
-            .HasForeignKey("NeighborhoodId");
+            .HasOne<Neighborhood>(r => r.Neighborhood)
+            .WithMany();
         
         modelBuilder.Entity<Rule>()
                     .HasMany(r => r.Collections)
@@ -95,10 +87,6 @@ public class XellariumContext : DbContext
                     .HasOne(r => r.Owner)
                     .WithMany(u => u.Rules);
         
-        modelBuilder.Entity<Rule>()
-            .Navigation(r => r.Owner)
-            .AutoInclude();
-        
         modelBuilder.Entity<Collection>()
                     .HasKey(c => c.Id);
         
@@ -113,9 +101,5 @@ public class XellariumContext : DbContext
         modelBuilder.Entity<Collection>()
                     .HasOne(c => c.Owner)
                     .WithMany(u => u.Collections);
-        
-        modelBuilder.Entity<Collection>()
-            .Navigation(c => c.Owner)
-            .AutoInclude();
     }
 }

@@ -14,6 +14,9 @@ public static class DataAccessConfiguration
     {
         using (var serviceScope = app.ApplicationServices.GetService<IServiceScopeFactory>()!.CreateScope())
         {
+            var logger = serviceScope.ServiceProvider.GetRequiredService<ILogger<XellariumContext>>();
+            
+            logger.LogInformation("Getting context and services");
             var context = serviceScope.ServiceProvider.GetRequiredService<XellariumContext>();
             var userService = serviceScope.ServiceProvider.GetRequiredService<IUserService>();
             var authenticationService = serviceScope.ServiceProvider.GetRequiredService<IAuthenticationService>();
@@ -23,47 +26,62 @@ public static class DataAccessConfiguration
 
             if (context.Database.IsRelational())
             {
+                logger.LogInformation("Migrating database");
                 await context.Database.MigrateAsync();
             }
-
+            
             if (!context.Users.Any())
             {
-                var moore = await neighborhoodService.AddNeighborhood(new Neighborhood()
+                logger.LogInformation("Seeding data");
+                
+                logger.LogInformation("Adding neighborhoods");
+                var moore = new Neighborhood()
                 {
-                    Id = 1,
                     Name = "Окрестность Мура",
                     Offsets = Neighborhood.MooreOffsets
-                });
+                };
+                await neighborhoodService.AddNeighborhood(moore);
+                logger.LogInformation("Added neighborhood {Name} id={Id}", moore.Name, moore.Id);
                 
+                logger.LogInformation("Adding admin user");
                 var user = await authenticationService.RegisterUser("admin", "admin");
+                logger.LogInformation("Added user {Name} id={Id}", user.Name, user.Id);
+                logger.LogInformation("Granting admin user admin role");
                 user.Role = UserRole.Admin;
+                await userService.UpdateUser(user);
                 
+                logger.LogInformation("Adding collection to admin user");
                 var col = new Collection()
                 {
-                    Id = 1,
                     Name = "Admin collection"
                 };
                 await userService.AddCollection(user.Id, col);
+                logger.LogInformation("Added collection {Name} id={Id}", col.Name, col.Id);
                 
+                logger.LogInformation("Adding rules to admin collection");
+                logger.LogInformation("Adding Game of Life rule");
                 var golRule = new Rule()
                 {
-                    Id = 1,
                     GenericRule = GenericRule.GameOfLife,
                     Name = "Game of Life",
-                    NeighborhoodId = moore.Id
+                    Neighborhood = moore
                 };
+                await userService.AddRule(user.Id, golRule);
+                logger.LogInformation("Added rule {Name} id={Id}", golRule.Name, golRule.Id);
+                
+                logger.LogInformation("Adding WireWorld rule");
                 var wireworldRule = new Rule()
                 {
-                    Id = 2,
                     GenericRule = GenericRule.WireWorld,
                     Name = "WireWorld",
-                    NeighborhoodId = moore.Id
+                    Neighborhood = moore
                 };
-                var addedGol = (await userService.AddRule(user.Id, golRule))!;
-                await userService.AddToCollection(col.Id, addedGol);
-                var addedWireworld = (await userService.AddRule(user.Id, wireworldRule))!;
-                await userService.AddToCollection(col.Id, addedWireworld);
-                await userService.UpdateUser(user);
+                await userService.AddRule(user.Id, wireworldRule);
+                logger.LogInformation("Added rule {Name} id={Id}", wireworldRule.Name, wireworldRule.Id);
+                
+                logger.LogInformation("Adding rules to admin collection");
+                await collectionService.AddRule(col.Id, golRule);
+                await collectionService.AddRule(col.Id, wireworldRule);
             }
         }
     }
@@ -77,8 +95,6 @@ public static class DataAccessConfiguration
             var connectionString = dbConnectConfig["ConnectionString"];
             builder.Services.AddDbContext<XellariumContext>(options =>
                 options
-                    .UseLazyLoadingProxies()
-                    .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
                     .EnableSensitiveDataLogging()
                     .UseNpgsql(connectionString));
         }
@@ -87,8 +103,7 @@ public static class DataAccessConfiguration
             var databaseName = dbConnectConfig["DatabaseName"]!;
             builder.Services.AddDbContext<XellariumContext>(options =>
                 options
-                    .UseLazyLoadingProxies()
-                    .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
+                    .EnableSensitiveDataLogging()
                     .UseInMemoryDatabase(databaseName));
         }
         else

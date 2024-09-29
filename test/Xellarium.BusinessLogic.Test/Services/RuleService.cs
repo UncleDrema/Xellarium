@@ -95,22 +95,23 @@ public class RuleServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         _mocks.RuleRepositoryMock.Verify(repo => repo.SoftDelete(It.IsAny<int>()), Times.Once);
     }
     
-    [Fact(DisplayName = "GetCollectionRules returns all rules of collection")]
-    public async Task GetCollectionRules_ReturnsAllRulesOfCollection()
+    [Fact(DisplayName = "GetRuleCollections returns collections with rule")]
+    public async Task GetRuleCollections_ReturnsCollectionsWithRule()
     {
         // Arrange
-        var rule1 = ObjectMother.SimpleRule();
-        var rule2 = ObjectMother.SimpleRule();
-        var collection = new CollectionBuilder()
-            .WithRules(rule1, rule2)
-            .Build();
-        _mocks.CollectionRepositoryMock.Setup(repo => repo.Get(It.IsAny<int>(), false)).ReturnsAsync(collection);
+        var col1 = ObjectMother.EmptyCollection();
+        var col2 = ObjectMother.EmptyCollection();
+        var rule = ObjectMother.SimpleRule();
+        col1.AddRule(rule);
+        col2.AddRule(rule);
+        
+        _mocks.RuleRepositoryMock.Setup(repo => repo.Get(It.IsAny<int>(), false)).ReturnsAsync(rule);
         
         // Act
-        var result = await _ruleService.GetCollectionRules(collection.Id);
+        var result = await _ruleService.GetRuleCollections(rule.Id);
         
         // Assert
-        Assert.Equal(collection.Rules, result);
+        Assert.Contains(col1, result);
     }
     
     [Fact(DisplayName = "RuleExists returns true when rule exists")]

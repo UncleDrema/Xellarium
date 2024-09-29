@@ -1,5 +1,6 @@
 ﻿using Asp.Versioning;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -14,8 +15,12 @@ namespace Xellarium.WebApi.V2;
 [Route("api/v{version:apiVersion}/[controller]")]
 [ApiController]
 [ApiVersion("2.0")]
-public class NeighbourhoodController(INeighborhoodService _service, IMapper mapper,
-    ILogger<NeighbourhoodController> logger) : ControllerBase
+[Produces("application/json")]
+[Authorize]
+[ProducesResponseType(StatusCodes.Status401Unauthorized)]
+[ProducesResponseType(StatusCodes.Status500InternalServerError)]
+public class NeighbourhoodsController(INeighborhoodService _service, IMapper mapper,
+    ILogger<NeighbourhoodsController> logger) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -43,33 +48,34 @@ public class NeighbourhoodController(INeighborhoodService _service, IMapper mapp
     [ProducesResponseType(StatusCodes.Status201Created)]
     public async Task<ActionResult<NeighborhoodDTO>> AddNeighbourhood(PostNeighborhoodDTO neighborhood)
     {
-        var newNeighborhood = await _service.AddNeighborhood(mapper.Map<Neighborhood>(neighborhood));
-        return CreatedAtAction(nameof(GetNeighbourhood), new {id = newNeighborhood.Id},
-            mapper.Map<NeighborhoodDTO>(newNeighborhood));
+        var neighbourhoodEntity = mapper.Map<Neighborhood>(neighborhood);
+        await _service.AddNeighborhood(neighbourhoodEntity);
+        return CreatedAtAction(nameof(GetNeighbourhood), new {id = neighbourhoodEntity.Id},
+            mapper.Map<NeighborhoodDTO>(neighbourhoodEntity));
     }
     
     [HttpPut("{id}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateNeighbourhood(int id, NeighborhoodDTO neighborhood)
+    public async Task<ActionResult<NeighborhoodDTO>> UpdateNeighbourhood(int id, NeighborhoodDTO neighborhood)
     {
         if (id != neighborhood.Id)
         {
             return BadRequest();
         }
 
-        try
+        var neighbourhoodEntity = await _service.GetNeighborhood(id);
+        if (neighbourhoodEntity == null)
         {
-            await _service.UpdateNeighborhood(mapper.Map<Neighborhood>(neighborhood));
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "Error updating neighborhood");
             return NotFound();
         }
 
-        return NoContent();
+        neighbourhoodEntity.Name = neighborhood.Name;
+        neighbourhoodEntity.Offsets = neighborhood.Offsets;
+        await _service.UpdateNeighborhood(neighbourhoodEntity);
+        
+        return Ok(mapper.Map<NeighborhoodDTO>(neighbourhoodEntity));
     }
     
     [HttpDelete("{id}")]

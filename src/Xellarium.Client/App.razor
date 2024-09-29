@@ -27,7 +27,7 @@
             var (result, userDto) = await _apiLogic.GetProfile();
             if (result == ResultCode.Ok)
             {
-                authProvider.SetAuthInfo(userDto!);
+                //authProvider.SetAuthInfo(userDto!);
             }
             else if (result == ResultCode.Unauthorized)
             {

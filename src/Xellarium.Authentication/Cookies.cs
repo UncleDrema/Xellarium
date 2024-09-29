@@ -33,14 +33,14 @@ public static class Cookies
     }
 }
 
-public static class Extensions
+public static class CookiesExtensions
 {
     private static bool IsInRole(this ClaimsPrincipal user, UserRole role)
     {
         return user.IsInRole(role.ToString());
     }
     
-    public static void ConfigureAuthentication(this WebApplicationBuilder builder)
+    public static void ConfigureCookiesAuthentication(this WebApplicationBuilder builder)
     {
         var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<AuthenticationFeature>>();
         builder.Services.AddAuthentication(options =>

@@ -4,11 +4,9 @@ namespace Xellarium.Client.Logics;
 
 public interface IApiLogic
 {
-    Task<ResultCode> Login(UserLoginDTO login);
+    Task<(ResultCode, AuthenticatedTokenDTO?)> Login(UserLoginDTO login);
     
-    Task<ResultCode> Register(UserLoginDTO login);
-    
-    Task<ResultCode> Logout();
+    Task<(ResultCode, AuthenticatedTokenDTO?)> Register(UserLoginDTO login);
 
     Task<(ResultCode, UserDTO[])> GetAllUsers();
     
@@ -27,12 +25,16 @@ public interface IApiLogic
     Task<(ResultCode, CollectionDTO?)> GetCollection(int collectionId);
     
     Task<RuleDTO> GetRule(int userId, int ruleId);
+
+    Task<RuleDTO> GetRule(int ruleId);
     
-    Task<(ResultCode, IEnumerable<RuleDTO>?)> GetCollectionRules(int collectionId);
+    Task<(ResultCode, IEnumerable<RuleReferenceDTO>?)> GetCollectionRules(int collectionId);
     
     Task<(ResultCode, IEnumerable<CollectionDTO>?)> GetPublicCollections();
     
     Task<(ResultCode, CollectionDTO?)> AddCollection(PostCollectionDTO collectionPostDto);
-    
-    Task<(ResultCode, RuleDTO?)> AddRule(int collectionId, PostRuleDTO ruleDto);
+
+    Task<(ResultCode, RuleDTO?)> AddRule(int userId, PostRuleDTO ruleDto);
+
+    Task AddRuleToCollection(int collectionid, int ruleId);
 }

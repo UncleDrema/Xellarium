@@ -14,6 +14,31 @@ public class ConfigureSwaggerOptions(IApiVersionDescriptionProvider provider)
         {
             options.SwaggerDoc(description.GroupName, CreateVersionInfo(description));
         }
+        options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+        {
+            Description = "JWT Authorization header using the Bearer scheme",
+            Name = "Authorization",
+            In = ParameterLocation.Header,
+            Type = SecuritySchemeType.ApiKey,
+            Scheme = "Bearer"
+        });
+        options.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "Bearer"
+                    },
+                    Scheme = "oauth2",
+                    Name = "Bearer",
+                    In = ParameterLocation.Header
+                },
+                System.Array.Empty<string>()
+            }
+        });
     }
     
     private OpenApiInfo CreateVersionInfo(

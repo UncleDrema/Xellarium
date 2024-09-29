@@ -7,5 +7,5 @@ public class RuleDTO
     public string Name { get; set; }
     public int OwnerId { get; set; }
     public int NeighborhoodId { get; set; }
-    public List<CollectionReferenceDTO> Collections { get; set; }
+    public List<CollectionReferenceDTO> CollectionReferences { get; set; }
 }

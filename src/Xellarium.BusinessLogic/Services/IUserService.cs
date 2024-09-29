@@ -19,11 +19,8 @@ public interface IUserService
     Task<bool> UserExists(string name);
     Task<Collection?> GetCollection(int collectionId);
     Task<Collection?> GetCollection(int userId, int collectionId);
-    Task<IEnumerable<Rule>> GetCollectionRules(int userId, int collectionId);
-    Task<IEnumerable<Collection>> GetAccessibleCollections(int userId);
     Task<Rule?> GetRule(int userId, int ruleId);
-    Task<Rule?> GetRule(int ruleId);
-    Task<Collection?> AddCollection(int id, Collection collection);
-    Task<Rule?> AddRule(int userId, Rule rule);
-    Task AddToCollection(int collectionId, Rule rule);
+    Task AddCollection(int id, Collection collection);
+    Task AddRule(int userId, Rule rule);
+    Task AddNewRuleToCollection(int userId, int collectionId, Rule rule);
 }

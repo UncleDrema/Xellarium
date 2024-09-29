@@ -12,6 +12,7 @@ public class Program
     public static async Task Main(string[] args)
     {
         var builder = WebAssemblyHostBuilder.CreateDefault(args);
+        
         builder.RootComponents.Add<App>("#app");
         builder.RootComponents.Add<HeadOutlet>("head::after");
         
@@ -22,12 +23,12 @@ public class Program
         builder.Services.AddBlazoredLocalStorage();
         
         builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
-        builder.Services.AddScoped<CookieHandler>();
-        builder.Services.AddHttpClient("API", options => 
-            {
-                options.BaseAddress = new Uri("http://localhost:5000/"); 
-            })
-        .AddHttpMessageHandler<CookieHandler>();
+        builder.Services.AddScoped<ApiMessageHandler>();
+        builder.Services.AddHttpClient("API", options =>
+        {
+            options.BaseAddress = new Uri("http://localhost:5000/");
+        })
+        .AddHttpMessageHandler<ApiMessageHandler>();
 
         builder.Services.AddScoped<IApiLogic, ApiLogic>();
 

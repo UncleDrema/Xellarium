@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
 using Microsoft.AspNetCore.HttpLogging;
+using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.EntityFrameworkCore.Infrastructure.Internal;
 using Microsoft.Net.Http.Headers;
@@ -25,8 +26,13 @@ public static class Program
         {
             await RunApp(args);
         }
+        catch (HostAbortedException)
+        {
+            // Ignore
+        }
         catch (Exception ex)
         {
+            Console.WriteLine(ex);
             Log.Fatal(ex, "Application terminated unexpectedly");
         }
         finally
@@ -34,17 +40,33 @@ public static class Program
             await Log.CloseAndFlushAsync();
         }
     }
-
+    
+    private static void ConfigureBusinessLogicConfiguration(WebApplicationBuilder builder)
+    {
+        var businessLogicConfiguration = builder.Configuration.GetSection("BusinessLogic").Get<BusinessLogicConfiguration>();
+        if (businessLogicConfiguration == null)
+        {
+            throw new InvalidOperationException("BusinessLogic configuration is missing");
+        }
+        builder.Services.AddSingleton(businessLogicConfiguration);
+    }
+    
+    private static void ConfigureJwtAuthorizationConfiguration(WebApplicationBuilder builder)
+    {
+        var jwtAuthorizationConfiguration = builder.Configuration.GetSection("JwtAuthorization").Get<JwtAuthorizationConfiguration>();
+        if (jwtAuthorizationConfiguration == null)
+        {
+            throw new InvalidOperationException("JwtAuthorization configuration is missing");
+        }
+        builder.Services.AddSingleton(jwtAuthorizationConfiguration);
+    }
+    
     public static async Task RunApp(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
         
-        var configuration = builder.Configuration.GetSection("BusinessLogic").Get<BusinessLogicConfiguration>();
-        if (configuration == null)
-        {
-            throw new InvalidOperationException("BusinessLogic configuration is missing");
-        }
-        builder.Services.AddSingleton(configuration);
+        ConfigureBusinessLogicConfiguration(builder);
+        ConfigureJwtAuthorizationConfiguration(builder);
         
         var logger = new LoggerConfiguration()
             .ReadFrom.Configuration(builder.Configuration)
@@ -65,11 +87,13 @@ public static class Program
             .AddJsonOptions(options =>
             {
                 options.JsonSerializerOptions.PropertyNamingPolicy = null;
+            })
+            .AddMvcOptions(options =>
+            {
+                options.Conventions.Add(new RouteTokenTransformerConvention(new SlugifyParameterTransformer()));
             });
-        builder.Services.AddScoped<IUserRepository, UserRepository>();
-        builder.Services.AddScoped<IRuleRepository, RuleRepository>();
-        builder.Services.AddScoped<ICollectionRepository, CollectionRepository>();
-        builder.Services.AddScoped<INeighborhoodRepository, NeighborhoodRepository>();
+        
+        builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         builder.Services.AddScoped<IUserService, UserService>();
         builder.Services.AddScoped<ICollectionService, CollectionService>();
@@ -119,7 +143,7 @@ public static class Program
         builder.Services.ConfigureOptions<ConfigureSwaggerOptions>();
 
         builder.ConfigureMapping();
-        builder.ConfigureAuthentication();
+        builder.ConfigureJwtAuthentication();
 
         var app = builder.Build();
 

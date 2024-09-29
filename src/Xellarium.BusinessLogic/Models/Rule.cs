@@ -14,11 +14,11 @@ namespace Xellarium.BusinessLogic.Models;
  */
 public class Rule : BaseModel
 {
-    public GenericRule GenericRule { get; init; }
-    public string Name { get; init; }
+    public GenericRule GenericRule { get; set; }
+    public string Name { get; set; }
     public virtual User Owner { get; set; }
-    public int NeighborhoodId { get; init; }
-    public virtual ICollection<Collection> Collections { get; init; } = new List<Collection>();
+    public Neighborhood Neighborhood { get; set; }
+    public virtual ICollection<Collection> Collections { get; set; } = new List<Collection>();
 
     public World NextState(World w, IList<Vec2> offsets, int times = 1)
     {

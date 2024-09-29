@@ -11,8 +11,12 @@ public static class AutoMapperConfiguration
     {
         var services = builder.Services;
         
-        services.AddTransient<IValueResolver<UserDTO, BusinessLogic.Models.User, ICollection<Rule>>, MappingProfile.UserRulesResolver>();
-        services.AddTransient<IValueResolver<UserDTO, BusinessLogic.Models.User, ICollection<Collection>>, MappingProfile.UserCollectionsResolver>();
+        services.AddTransient<IValueResolver<UserDTO, User, ICollection<Rule>>, MappingProfile.UserRulesResolver>();
+        services.AddTransient<IValueResolver<UserDTO, User, ICollection<Collection>>, MappingProfile.UserCollectionsResolver>();
+        services.AddTransient<IValueResolver<RuleDTO, Rule, User>, MappingProfile.RuleOwnerResolver>();
+        services.AddTransient<IValueResolver<RuleDTO, Rule, ICollection<Collection>>, MappingProfile.RuleCollectionsResolver>();
+        services.AddTransient<IValueResolver<CollectionDTO, Collection, User>, MappingProfile.CollectionOwnerResolver>();
+        services.AddTransient<IValueResolver<CollectionDTO, Collection, ICollection<Rule>>, MappingProfile.CollectionRulesResolver>();
         services.AddTransient<MappingProfile>();
 
         var provider = services.BuildServiceProvider();
@@ -28,54 +32,134 @@ public static class AutoMapperConfiguration
     public class MappingProfile : Profile
     {
         public MappingProfile(
-            IValueResolver<UserDTO, BusinessLogic.Models.User, ICollection<Collection>> userCollectionsResolver,
-            IValueResolver<UserDTO, BusinessLogic.Models.User, ICollection<Rule>> userRulesResolver)
+            IValueResolver<UserDTO, User, ICollection<Collection>> userCollectionsResolver,
+            IValueResolver<UserDTO, User, ICollection<Rule>> userRulesResolver,
+            IValueResolver<RuleDTO, Rule, User> ruleOwnerResolver,
+            IValueResolver<RuleDTO, Rule, ICollection<Collection>> ruleCollectionResolver,
+            IValueResolver<CollectionDTO, Collection, User> collectionOwnerResolver,
+            IValueResolver<CollectionDTO, Collection, ICollection<Rule>> collectionRulesResolver)
         {
             CreateMap<Collection, CollectionReferenceDTO>();
             CreateMap<Rule, RuleReferenceDTO>();
             CreateMap<Neighborhood, NeighborhoodDTO>();
+            /*
             CreateMap<NeighborhoodDTO, Neighborhood>();
-            CreateMap<UserDTO, BusinessLogic.Models.User>()
+            */
+            /*
+            CreateMap<UserDTO, User>()
                 .ForMember(dest => dest.Rules, opt => opt.MapFrom(userRulesResolver))
                 .ForMember(dest => dest.Collections, opt => opt.MapFrom(userCollectionsResolver));
-            CreateMap<BusinessLogic.Models.User, UserDTO>()
+                */
+            CreateMap<User, UserDTO>()
                 .ForMember(dest => dest.Rules, opt => opt.MapFrom(src => src.Rules))
                 .ForMember(dest => dest.Collections, opt => opt.MapFrom(src => src.Collections));;
             CreateMap<Collection, CollectionDTO>()
                 .ForMember(dest => dest.OwnerId, opt => opt.MapFrom(src => src.Owner.Id))
-                .ForMember(dest => dest.Rules, opt => opt.MapFrom(src => src.Rules));
+                .ForMember(dest => dest.RuleReferences, opt => opt.MapFrom(src => src.Rules));
+            /*
+            CreateMap<CollectionDTO, Collection>()
+                .ForMember(dest => dest.Owner, opt => opt.MapFrom(collectionOwnerResolver))
+                .ForMember(dest => dest.Rules, opt => opt.MapFrom(collectionRulesResolver));
+                */
             CreateMap<Rule, RuleDTO>()
                 .ForMember(dest => dest.OwnerId, opt => opt.MapFrom(src => src.Owner.Id))
-                .ForMember(dest => dest.Collections, opt => opt.MapFrom(src => src.Collections));
+                .ForMember(dest => dest.CollectionReferences, opt => opt.MapFrom(src => src.Collections));
+            /*
+            CreateMap<RuleDTO, Rule>()
+                .ForMember(dest => dest.Owner, opt => opt.MapFrom(ruleOwnerResolver))
+                .ForMember(dest => dest.Collections, opt => opt.MapFrom(ruleCollectionResolver));
+                */
         }
         
-        public class UserRulesResolver : IValueResolver<UserDTO, BusinessLogic.Models.User, ICollection<Rule>>
+        public class CollectionOwnerResolver : IValueResolver<CollectionDTO, Collection, User>
+        {
+            private readonly IUserRepository _userRepository;
+
+            public CollectionOwnerResolver(IUnitOfWork unitOfWork)
+            {
+                _userRepository = unitOfWork.Users;
+            }
+
+            public User Resolve(CollectionDTO source, Collection destination, User destMember, ResolutionContext context)
+            {
+                return Task.Run(async () => await _userRepository.Get(source.Id)).Result!;
+            }
+        }
+
+        public class CollectionRulesResolver : IValueResolver<CollectionDTO, Collection, ICollection<Rule>>
         {
             private readonly IRuleRepository _ruleRepository;
 
-            public UserRulesResolver(IRuleRepository ruleRepository)
+            public CollectionRulesResolver(IUnitOfWork unitOfWork)
             {
-                _ruleRepository = ruleRepository;
+                _ruleRepository = unitOfWork.Rules;
             }
-            
-            public ICollection<Rule> Resolve(UserDTO source, BusinessLogic.Models.User destination, ICollection<Rule> destMember, ResolutionContext context)
+
+            public ICollection<Rule> Resolve(CollectionDTO source, Collection destination, ICollection<Rule> destMember,
+                ResolutionContext context)
             {
-                return Task.Run(async () => await _ruleRepository.GetAllByIds(source.Rules.Select(r => r.Id))).Result.ToList();
+                return Task.Run(async () => await _ruleRepository.GetAllByIdsInclude(source.RuleReferences.Select(colRef => colRef.Id))).Result.ToList();
+            }
+        }
+        
+        public class RuleOwnerResolver : IValueResolver<RuleDTO, Rule, User>
+        {
+            private readonly IUserRepository _userRepository;
+
+            public RuleOwnerResolver(IUnitOfWork unitOfWork)
+            {
+                _userRepository = unitOfWork.Users;
+            }
+
+            public User Resolve(RuleDTO source, Rule destination, User destMember, ResolutionContext context)
+            {
+                return Task.Run(async () => await _userRepository.Get(source.Id)).Result!;
             }
         }
 
-        public class UserCollectionsResolver : IValueResolver<UserDTO, BusinessLogic.Models.User, ICollection<Collection>>
+        public class RuleCollectionsResolver : IValueResolver<RuleDTO, Rule, ICollection<Collection>>
         {
             private readonly ICollectionRepository _collectionRepository;
 
-            public UserCollectionsResolver(ICollectionRepository collectionRepository)
+            public RuleCollectionsResolver(IUnitOfWork unitOfWork)
             {
-                _collectionRepository = collectionRepository;
+                _collectionRepository = unitOfWork.Collections;
+            }
+
+            public ICollection<Collection> Resolve(RuleDTO source, Rule destination, ICollection<Collection> destMember,
+                ResolutionContext context)
+            {
+                return Task.Run(async () => await _collectionRepository.GetAllByIdsInclude(source.CollectionReferences.Select(colRef => colRef.Id))).Result.ToList();
+            }
+        }
+        
+        public class UserRulesResolver : IValueResolver<UserDTO, User, ICollection<Rule>>
+        {
+            private readonly IRuleRepository _ruleRepository;
+
+            public UserRulesResolver(IUnitOfWork unitOfWork)
+            {
+                _ruleRepository = unitOfWork.Rules;
             }
             
-            public ICollection<Collection> Resolve(UserDTO source, BusinessLogic.Models.User destination, ICollection<Collection> destMember, ResolutionContext context)
+            public ICollection<Rule> Resolve(UserDTO source, User destination, ICollection<Rule> destMember, ResolutionContext context)
             {
-                return Task.Run(async () => await _collectionRepository.GetAllByIds(source.Rules.Select(r => r.Id))).Result.ToList();
+                return Task.Run(async () => await _ruleRepository.GetAllByIdsInclude(source.Rules.Select(r => r.Id))).Result.ToList();
+            }
+        }
+
+        public class UserCollectionsResolver : IValueResolver<UserDTO, User, ICollection<Collection>>
+        {
+            private readonly ICollectionRepository _collectionRepository;
+
+            public UserCollectionsResolver(IUnitOfWork unitOfWork)
+            {
+                _collectionRepository = unitOfWork.Collections;
+            }
+            
+            public ICollection<Collection> Resolve(UserDTO source, User destination, ICollection<Collection> destMember, ResolutionContext context)
+            {
+                return Task.Run(async () => await _collectionRepository.GetAllByIdsInclude(source.Rules.Select(r => r.Id))).Result.ToList();
             }
         }
     }

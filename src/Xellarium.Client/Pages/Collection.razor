@@ -41,10 +41,15 @@ else
         if (result == ResultCode.Ok && coll != null)
         {
             collection = coll;
-            var (ruleResult, ruleDtos) = await ApiLogic.GetCollectionRules(collectionId);
-            if (ruleResult == ResultCode.Ok && ruleDtos != null)
+            var (ruleResult, ruleReferences) = await ApiLogic.GetCollectionRules(collectionId);
+            if (ruleResult == ResultCode.Ok && ruleReferences != null)
             {
-                rules = ruleDtos.ToArray();
+                var ruleList = new List<RuleDTO>();
+                foreach (var ruleRef in ruleReferences)
+                {
+                    ruleList.Add(await ApiLogic.GetRule(ruleRef.Id));
+                }
+                rules = ruleList.ToArray();
                 errorMessage = string.Empty;
             }
             else

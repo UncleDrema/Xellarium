@@ -4,8 +4,8 @@ namespace Xellarium.BusinessLogic.Models;
 
 public class Neighborhood : BaseModel
 {
-    public string Name { get; init; } = "";
-    public Vec2[] Offsets { get; init; } = Array.Empty<Vec2>();
+    public string Name { get; set; } = "";
+    public IList<Vec2> Offsets { get; set; } = Array.Empty<Vec2>();
     
     public static Vec2[] MooreOffsets =>
     [

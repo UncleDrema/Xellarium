@@ -17,13 +17,9 @@
 @code {
     private async Task Logout()
     {
-        var response = await _apiLogic.Logout();
-        if (response == ResultCode.Ok)
-        {
-            ((CustomAuthStateProvider) _authStateProvider).ClearAuthInfo();
-            await _localStorageService.RemoveItemAsync("isauthenticated");
-            _navigationManager.NavigateTo("/", true);
-        }
- 
+        ((CustomAuthStateProvider) _authStateProvider).MarkUserAsLoggedOut();
+        await _localStorageService.RemoveItemAsync("isauthenticated");
+        await _localStorageService.RemoveItemAsync("token");
+        _navigationManager.NavigateTo("/", true);
     }
 }

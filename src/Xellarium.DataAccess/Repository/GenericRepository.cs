@@ -1,19 +1,16 @@
 ﻿using System.Text;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Xellarium.BusinessLogic.Models;
 using Xellarium.BusinessLogic.Repository;
 using Xellarium.DataAccess.Models;
 
 namespace Xellarium.DataAccess.Repository;
 
-public abstract class GenericRepository<T> : IGenericRepository<T> where T : BaseModel
+public abstract class GenericRepository<T>(XellariumContext context, ILogger logger) : IGenericRepository<T>
+    where T : BaseModel
 {
-    protected readonly XellariumContext _context;
-
-    public GenericRepository(XellariumContext context)
-    {
-        _context = context;
-    }
+    protected readonly XellariumContext _context = context;
 
     public async Task<IEnumerable<T>> GetAll(bool includeDeleted = false)
     {
@@ -36,19 +33,16 @@ public abstract class GenericRepository<T> : IGenericRepository<T> where T : Bas
         return entity.IsDeleted == false ? entity : null;
     }
 
-    public async Task<T> Add(T entity, bool save = true)
+    public async Task Add(T entity)
     {
         entity.MarkCreated();
-        _context.Set<T>().Add(entity);
-        if (save)
-            await _context.SaveChangesAsync();
-        return entity;
+        await _context.Set<T>().AddAsync(entity);
     }
 
     public async Task Update(T entity)
     {
         entity.MarkUpdated();
-        await _context.SaveChangesAsync();
+        _context.Set<T>().Update(entity);
     }
 
     public async Task SoftDelete(int id)
@@ -56,7 +50,7 @@ public abstract class GenericRepository<T> : IGenericRepository<T> where T : Bas
         var entity = await Get(id);
         if (entity == null) return;
         entity.Delete();
-        await _context.SaveChangesAsync();
+        await Update(entity);
     }
     
     public async Task HardDelete(int id)
@@ -64,7 +58,6 @@ public abstract class GenericRepository<T> : IGenericRepository<T> where T : Bas
         var entity = await Get(id);
         if (entity == null) return;
         _context.Set<T>().Remove(entity);
-        await _context.SaveChangesAsync();
     }
 
     public Task<bool> Exists(int id, bool includeDeleted = false)

@@ -1,8 +1,10 @@
 ﻿@page "/newrule"
 @using System.ComponentModel.DataAnnotations
+@using System.Security.Claims
 @using Xellarium.Shared
 @inject IApiLogic ApiLogic
 @inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthState
 <h3>New Rule</h3>
 @if (!string.IsNullOrEmpty(errorMessage))
 {
@@ -203,7 +205,12 @@ else
                 GenericRule = genericRule,
                 NeighborhoodId = newRule.NeighborhoodId
             };
-            var (result, _) = await ApiLogic.AddRule(newRule.CollectionId, rule);
+            var authState = await AuthState.GetAuthenticationStateAsync();
+            var userIdRaw = authState.User.Claims.First(c => c.Type == ClaimTypes.NameIdentifier).Value;
+            var userId = int.Parse(userIdRaw);
+            var (result, addedRule) = await ApiLogic.AddRule(userId, rule);
+            await ApiLogic.AddRuleToCollection(newRule.CollectionId, addedRule.Id);
+            
             if (result == ResultCode.Ok)
             {
                 NavigationManager.NavigateTo($"/collection/{newRule.CollectionId}");

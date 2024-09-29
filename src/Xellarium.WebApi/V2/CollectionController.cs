@@ -1,10 +1,14 @@
 ﻿using Asp.Versioning;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Xellarium.BusinessLogic;
 using Xellarium.BusinessLogic.Models;
+using Xellarium.BusinessLogic.Repository;
 using Xellarium.BusinessLogic.Services;
+using Xellarium.Shared;
 using Xellarium.Shared.DTO;
 
 namespace Xellarium.WebApi.V2;
@@ -12,14 +16,44 @@ namespace Xellarium.WebApi.V2;
 [Route("api/v{version:apiVersion}/[controller]")]
 [ApiController]
 [ApiVersion("2.0")]
-public class CollectionController(ICollectionService _collectionService, IRuleService _ruleService,
-    IMapper mapper, ILogger<CollectionController> logger) : ControllerBase
+[Produces("application/json")]
+[Authorize]
+[ProducesResponseType(StatusCodes.Status401Unauthorized)]
+[ProducesResponseType(StatusCodes.Status500InternalServerError)]
+public class CollectionsController(ICollectionService _collectionService, IRuleService _ruleService,
+    IUserService _userService, BusinessLogicConfiguration businessLogicConfig,
+    IMapper mapper, ILogger<CollectionsController> logger) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<CollectionDTO>>> GetCollections()
+    public async Task<ActionResult<IEnumerable<CollectionDTO>>> GetCollections([FromQuery] bool includePrivate = false)
     {
-        var collections = await _collectionService.GetCollections();
+        IEnumerable<Collection> collections;
+        if (!HttpContext.TryGetAuthenticatedUser(out var authUser))
+        {
+            if (includePrivate)
+            {
+                return Unauthorized();
+            }
+            collections = await _collectionService.GetPublicCollections();
+        }
+        else
+        {
+            var user = await _userService.GetUser(authUser.Id);
+            if (user == null)
+            {
+                throw new InvalidOperationException("Current user not found");
+            }
+            
+            if (includePrivate && user.Role != UserRole.Admin)
+            {
+                return Unauthorized();
+            }
+            collections = includePrivate
+                ? await _collectionService.GetCollections()
+                : await _collectionService.GetPublicAndOwnedCollections(authUser!.Id);
+        }
+        
         return Ok(collections.Select(mapper.Map<CollectionDTO>));
     }
     
@@ -28,6 +62,7 @@ public class CollectionController(ICollectionService _collectionService, IRuleSe
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<CollectionDTO>> GetCollection(int id)
     {
+        logger.LogInformation("Requested collection {Id}", id);
         var collection = await _collectionService.GetCollection(id);
         if (collection == null)
         {
@@ -41,23 +76,50 @@ public class CollectionController(ICollectionService _collectionService, IRuleSe
     [ProducesResponseType(StatusCodes.Status201Created)]
     public async Task<ActionResult<CollectionDTO>> AddCollection(PostCollectionDTO collection)
     {
-        var newCollection = await _collectionService.AddCollection(mapper.Map<Collection>(collection));
+        if (!HttpContext.TryGetAuthenticatedUser(out var authUser))
+        {
+            return Unauthorized();
+        }
+        
+        var user = await _userService.GetUser(authUser.Id);
+        if (user == null)
+        {
+            throw new InvalidOperationException("Current user not found");
+        }
+        
+        var newCollection = new Collection
+        {
+            Name = collection.Name,
+            IsPrivate = collection.IsPrivate ?? businessLogicConfig.CollectionsPrivateByDefault,
+            Owner = user
+        };
+        await _collectionService.AddCollection(newCollection);
         return CreatedAtAction(nameof(GetCollection), new {id = newCollection.Id},
             mapper.Map<CollectionDTO>(newCollection));
     }
     
     [HttpPut("{id}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> UpdateCollection(int id, CollectionDTO collection)
+    public async Task<ActionResult<CollectionDTO>> UpdateCollection(int id, CollectionDTO collection)
     {
         if (id != collection.Id)
         {
-            return BadRequest();
+            return BadRequest("Id in path and body do not match");
         }
         
-        await _collectionService.UpdateCollection(mapper.Map<Collection>(collection));
-        return NoContent();
+        var collectionEntity = await _collectionService.GetCollection(id);
+        if (collectionEntity == null)
+        {
+            return NotFound();
+        }
+        
+        collectionEntity.Name = collection.Name;
+        collectionEntity.IsPrivate = collection.IsPrivate;
+        collectionEntity.Owner = (await _userService.GetUser(collection.OwnerId))!;
+        collectionEntity.Rules = collection.RuleReferences.Select(r => _ruleService.GetRule(r.Id).Result).ToList()!;
+        await _collectionService.UpdateCollection(collectionEntity);
+        return Ok(mapper.Map<CollectionDTO>(collectionEntity));
     }
     
     [HttpDelete("{id}")]
@@ -77,7 +139,7 @@ public class CollectionController(ICollectionService _collectionService, IRuleSe
     [HttpGet("{id}/rules")]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<RuleDTO>>> GetCollectionRules(int id)
+    public async Task<ActionResult<IEnumerable<RuleDTO>>> GetRules(int id)
     {
         var collection = await _collectionService.GetCollection(id);
         if (collection == null)
@@ -88,8 +150,23 @@ public class CollectionController(ICollectionService _collectionService, IRuleSe
         var rules = collection.Rules;
         return Ok(rules.Select(mapper.Map<RuleDTO>));
     }
+    
+    [HttpGet("{id}/contained_rules")]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<RuleReferenceDTO>>> GetCollectionRules(int id)
+    {
+        var collection = await _collectionService.GetCollection(id);
+        if (collection == null)
+        {
+            return NotFound();
+        }
 
-    [HttpPost("{id}/rules")]
+        var rules = collection.Rules;
+        return Ok(rules.Select(mapper.Map<RuleReferenceDTO>));
+    }
+
+    [HttpPost("{id}/contained_rules")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> AddRule(int id, RuleReferenceDTO ruleReference)
@@ -110,7 +187,7 @@ public class CollectionController(ICollectionService _collectionService, IRuleSe
         return Ok(); 
     }
     
-    [HttpDelete("{id}/rules/{ruleId}")]
+    [HttpDelete("{id}/contained_rules/{ruleId}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RemoveRule(int id, int ruleId)
@@ -126,28 +203,8 @@ public class CollectionController(ICollectionService _collectionService, IRuleSe
         {
             return NotFound();
         }
-        foreach (var r in collection.Rules)
-        {
-            logger.LogInformation("Rule: {Id}, {Name}", r.Id, r.Name);
-        }
-        logger.LogInformation("Removing rule: {Id}, {Name} {Contains}", rule.Id, rule.Name, collection.Rules.Contains(rule));
-            
 
         await _collectionService.RemoveRule(collection.Id, rule.Id);
-        return NoContent();
-    }
-    
-    [HttpPut("{id}/privacy")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> SetPrivacy(int id, bool isPrivate)
-    {
-        if (!await _collectionService.CollectionExists(id))
-        {
-            return NotFound();
-        }
-
-        await _collectionService.SetPrivacy(id, isPrivate);
         return NoContent();
     }
     

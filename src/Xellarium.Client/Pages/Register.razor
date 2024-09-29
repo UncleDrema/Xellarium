@@ -35,10 +35,12 @@
  
     private async Task RegisterUser()
     {
-        var success = await _apiLogic.Register(loginModel);
+        var (success, tokenDto) = await _apiLogic.Register(loginModel);
         if (success == ResultCode.Ok)
         {
             await _localStorage.SetItemAsStringAsync("isauthenticated", "true");
+            await _localStorage.SetItemAsStringAsync("token", tokenDto!.Token);
+            ((CustomAuthStateProvider)_authStateProvider).MarkUserAsAuthenticated("user");
             _navigationManager.NavigateTo("/",true);
         }
         else if (success == ResultCode.Error)

@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
 using NuGet.Protocol;
@@ -38,12 +39,14 @@ public static class ApiHelper
         foreach(Type type in assembly.GetTypes())
         {
             var routes = type.GetCustomAttributes<RouteAttribute>(true).ToList();
+            var apiVersion = type.GetCustomAttribute<ApiVersionAttribute>();
             if (routes.Count > 0)
             {
                 var route = routes[0];
                 var template = route!.Template;
                 var noControllerName = type.Name.Replace("Controller", "");
                 var realisedTemplate = template.Replace("[controller]", noControllerName);
+                realisedTemplate = realisedTemplate.Replace("{version:apiVersion}", $"{apiVersion.Versions[0].MajorVersion}");
                 yield return (type, realisedTemplate);
             }
         }
@@ -152,7 +155,7 @@ public static class ApiHelper
             Name = InputType<string>("Name"),
             IsPrivate = InputType<bool>("IsPrivate"),
             OwnerId = InputType<int>("OwnerId"),
-            Rules = InputType<List<int>>("RuleIds").Select(i => new RuleReferenceDTO(){Id = i}).ToList()
+            RuleReferences = InputType<List<int>>("RuleIds").Select(i => new RuleReferenceDTO(){Id = i}).ToList()
         };
     }
     
@@ -164,7 +167,7 @@ public static class ApiHelper
             Name = InputType<string>("Name"),
             GenericRule = InputType<GenericRule>("GenericRule"),
             OwnerId = InputType<int>("OwnerId"),
-            Collections = InputType<List<int>>("CollectionIds").Select(i => new CollectionReferenceDTO(){Id = i}).ToList()
+            CollectionReferences = InputType<List<int>>("CollectionIds").Select(i => new CollectionReferenceDTO(){Id = i}).ToList()
         };
     }
     

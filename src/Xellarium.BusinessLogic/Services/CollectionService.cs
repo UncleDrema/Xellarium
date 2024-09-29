@@ -3,87 +3,95 @@ using Xellarium.BusinessLogic.Repository;
 
 namespace Xellarium.BusinessLogic.Services;
 
-public class CollectionService : ICollectionService
+public class CollectionService(IUnitOfWork unitOfWork)
+    : ICollectionService
 {
-    private readonly ICollectionRepository _collectionRepository;
-    private readonly IRuleRepository _ruleRepository;
-
-    public CollectionService(ICollectionRepository collectionRepository, IRuleRepository ruleRepository)
-    {
-        _collectionRepository = collectionRepository;
-        _ruleRepository = ruleRepository;
-    }
-
     public async Task<IEnumerable<Collection>> GetCollections()
     {
-        return await _collectionRepository.GetAll();
+        return await unitOfWork.Collections.GetAllInclude();
+    }
+    
+    public async Task<IEnumerable<Collection>> GetPublicAndOwnedCollections(int userId)
+    {
+        return await unitOfWork.Collections.GetPublicAndOwned(userId);
+    }
+
+    public async Task<IEnumerable<Collection>> GetPublicCollections()
+    {
+        return await unitOfWork.Collections.GetPublic();
     }
 
     public async Task<Collection?> GetCollection(int id)
     {
-        return await _collectionRepository.Get(id);
+        return await unitOfWork.Collections.GetInclude(id);
     }
 
-    public async Task<Collection> AddCollection(Collection collection)
+    public async Task AddCollection(Collection collection)
     {
-        if (await _collectionRepository.Exists(collection.Id)) throw new ArgumentException("Collection already exists");
-        return await _collectionRepository.Add(collection);
+        if (await unitOfWork.Collections.Exists(collection.Id)) throw new ArgumentException("Collection already exists");
+        await unitOfWork.Collections.Add(collection);
+        await unitOfWork.CompleteAsync();
     }
 
     public async Task UpdateCollection(Collection collection)
     {
-        if (!await _collectionRepository.Exists(collection.Id)) throw new ArgumentException("Collection not found");
-        await _collectionRepository.Update(collection);
+        if (!await unitOfWork.Collections.Exists(collection.Id)) throw new ArgumentException("Collection not found");
+        await unitOfWork.Collections.Update(collection);
+        await unitOfWork.CompleteAsync();
+        
     }
 
     public async Task DeleteCollection(int id)
     {
-        var collection = await _collectionRepository.Get(id, true);
-        if (collection == null || collection.IsDeleted) throw new ArgumentException("Collection not found");
-        await _collectionRepository.SoftDelete(id);
+        var collection = await unitOfWork.Collections.Get(id);
+        if (collection == null) throw new ArgumentException("Collection not found");
+        await unitOfWork.Collections.SoftDelete(id);
+        await unitOfWork.CompleteAsync();
     }
-
-    public async Task<IEnumerable<Collection>> GetRuleCollections(int ruleId)
+    
+    public async Task<IEnumerable<Rule>> GetCollectionRules(int collectionId)
     {
-        var rule = await _ruleRepository.Get(ruleId);
-        if (rule == null) throw new ArgumentException("Rule not found");
-        return rule.Collections;
+        var collection = await unitOfWork.Collections.GetInclude(collectionId);
+        if (collection == null) throw new ArgumentException("Collection not found");
+        return collection.Rules;
     }
 
     public async Task AddRule(int collectionId, Rule rule)
     {
-        var collection = await _collectionRepository.Get(collectionId);
+        var collection = await unitOfWork.Collections.GetInclude(collectionId);
         if (collection == null) return;
-        await _ruleRepository.Add(rule);
         collection.AddRule(rule);
-        await _collectionRepository.Update(collection);
+        await unitOfWork.Collections.Update(collection);
+        await unitOfWork.CompleteAsync();
     }
     
     public async Task RemoveRule(int collectionId, int ruleId)
     {
-        var collection = await _collectionRepository.Get(collectionId);
+        var collection = await unitOfWork.Collections.GetInclude(collectionId);
         if (collection == null) return;
         
         collection.RemoveRule(collection.Rules.First(r => r.Id == ruleId));
-        await _collectionRepository.Update(collection);
+        await unitOfWork.Collections.Update(collection);
+        await unitOfWork.CompleteAsync();
     }
     
     public async Task SetPrivacy(int id, bool isPrivate)
     {
-        var collection = await _collectionRepository.Get(id);
+        var collection = await unitOfWork.Collections.GetInclude(id);
         if (collection == null) throw new ArgumentException("Collection not found");
         collection.IsPrivate = isPrivate;
-        await _collectionRepository.Update(collection);
+        await unitOfWork.Collections.Update(collection);
+        await unitOfWork.CompleteAsync();
     }
 
     public Task<bool> CollectionExists(int id)
     {
-        return _collectionRepository.Exists(id);
+        return unitOfWork.Collections.Exists(id);
     }
 
     public async Task<User?> GetOwner(int collectionId)
     {
-        var collection = await _collectionRepository.Get(collectionId);
+        var collection = await unitOfWork.Collections.GetInclude(collectionId);
         return collection?.Owner;
     }
 }

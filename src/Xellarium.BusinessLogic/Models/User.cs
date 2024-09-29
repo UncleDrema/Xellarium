@@ -7,13 +7,13 @@ namespace Xellarium.BusinessLogic.Models;
  */
 public class User : BaseModel
 {
-    public string Name { get; init; } = "";
+    public string Name { get; set; } = "";
     public string PasswordHash { get; set; } = "";
     public UserRole Role { get; set; } = UserRole.User;
     public int WarningsCount { get; set; } = 0;
     public bool IsBlocked { get; set; } = false;
-    public virtual ICollection<Rule> Rules { get; init; } = new List<Rule>();
-    public virtual ICollection<Collection> Collections { get; init; } = new List<Collection>();
+    public virtual ICollection<Rule> Rules { get; set; } = new List<Rule>();
+    public virtual ICollection<Collection> Collections { get; set; } = new List<Collection>();
     
     public void AddWarning()
     {

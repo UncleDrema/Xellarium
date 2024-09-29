@@ -18,7 +18,7 @@ namespace Xellarium.WebApi.V1;
 [Route("api/v{version:apiVersion}/[controller]")]
 [ApiController]
 [ApiVersion("1.0", Deprecated = true)]
-public class UserController(IUserService service, IAuthenticationService authenticationService, IMapper mapper,
+public class UserController(IUserService service, ICollectionService _collectionService, IAuthenticationService authenticationService, IMapper mapper,
     ILogger<UserController> logger, BusinessLogicConfiguration configuration) : ControllerBase
 {
     #region AuthEndpoints
@@ -174,7 +174,7 @@ public class UserController(IUserService service, IAuthenticationService authent
     public async Task<ActionResult<RuleDTO>> GetRule(int id, int ruleId)
     {
         logger.LogInformation("Requested rule {RuleId} of user {Id}", ruleId, id);
-        var rule = await service.GetRule(ruleId);
+        var rule = await service.GetRule(id, ruleId);
         if (rule == null)
         {
             logger.LogInformation("Rule {RuleId} of user {Id} not found", ruleId, id);
@@ -343,7 +343,7 @@ public class UserController(IUserService service, IAuthenticationService authent
     public async Task<ActionResult<IEnumerable<CollectionDTO>>> GetAccessibleCollections(int id)
     {
         logger.LogInformation("Requested accessible collections of user {Id}", id);
-        var collections = await service.GetAccessibleCollections(id);
+        var collections = await _collectionService.GetPublicAndOwnedCollections(id);
         return Ok(collections.Select(mapper.Map<Collection, CollectionDTO>));
     }
 
@@ -404,16 +404,10 @@ public class UserController(IUserService service, IAuthenticationService authent
         {
             GenericRule = postRuleDto.GenericRule,
             Name = postRuleDto.Name,
-            NeighborhoodId = postRuleDto.NeighborhoodId
+            Neighborhood = (await service.GetNeighborhood(postRuleDto.NeighborhoodId))!
         };
-        var addedRule = await service.AddRule(id, realRule);
-        if (addedRule == null)
-        {
-            logger.LogInformation("User {Id} not found", id);
-            return NotFound();
-        }
-        await service.AddToCollection(collectionId, addedRule);
-        var ruleDto = mapper.Map<Rule, RuleDTO>(addedRule!);
+        await service.AddNewRuleToCollection(id, collectionId, realRule);
+        var ruleDto = mapper.Map<Rule, RuleDTO>(realRule!);
         logger.LogInformation("Added rule {@RuleDto} to collection {CollectionId} of user {Id}", ruleDto, collectionId, id);
         return CreatedAtAction(nameof(GetRule), new {id, ruleId = ruleDto.Id}, ruleDto);
     }
@@ -435,8 +429,8 @@ public class UserController(IUserService service, IAuthenticationService authent
             Name = collectionPostDto.Name,
             IsPrivate = collectionPostDto.IsPrivate ?? configuration.CollectionsPrivateByDefault
         };
-        var res = await service.AddCollection(id, realCollection);
-        var collectionDto = mapper.Map<Collection, CollectionDTO>(res!);
+        await service.AddCollection(id, realCollection);
+        var collectionDto = mapper.Map<Collection, CollectionDTO>(realCollection!);
         logger.LogInformation("Added collection {@CollectionDto} to user {Id}", collectionDto, id);
         return CreatedAtAction(nameof(GetCollection), new {id, collectionId = collectionDto.Id}, collectionDto);
     }

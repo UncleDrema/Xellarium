@@ -1,12 +1,33 @@
-﻿using Xellarium.BusinessLogic.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Xellarium.BusinessLogic.Models;
 using Xellarium.BusinessLogic.Repository;
 using Xellarium.DataAccess.Models;
 
 namespace Xellarium.DataAccess.Repository;
 
-public class RuleRepository : GenericRepository<Rule>, IRuleRepository
+public class RuleRepository(XellariumContext context, ILogger logger)
+    : GenericRepository<Rule>(context, logger), IRuleRepository
 {
-    public RuleRepository(XellariumContext context) : base(context)
+    public async Task<IEnumerable<Rule>> GetAllInclude()
     {
+        return await _context.Rules.Include(r => r.Owner)
+            .Include(r => r.Collections)
+            .ToListAsync();
+    }
+    
+    public async Task<IEnumerable<Rule>> GetAllByIdsInclude(IEnumerable<int> ids)
+    {
+        return await _context.Rules.Include(r => r.Owner)
+            .Include(r => r.Collections)
+            .Where(r => ids.Contains(r.Id))
+            .ToListAsync();
+    }
+
+    public async Task<Rule?> GetInclude(int id)
+    {
+        return await _context.Rules.Include(r => r.Owner)
+            .Include(r => r.Collections)
+            .FirstOrDefaultAsync(r => r.Id == id);
     }
 }

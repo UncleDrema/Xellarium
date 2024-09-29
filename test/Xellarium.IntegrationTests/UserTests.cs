@@ -1,6 +1,7 @@
 using Allure.Net.Commons;
 using Allure.Xunit.Attributes;
 using Allure.Xunit.Attributes.Steps;
+using Microsoft.Extensions.Logging;
 using Xellarium.BusinessLogic.Models;
 using Xellarium.BusinessLogic.Services;
 using Xellarium.DataAccess.Models;
@@ -107,10 +108,11 @@ public class AuthenticationTests
     [AllureStep("Create user and authentication serivces")]
     private (IUserService, IAuthenticationService) GetServices(XellariumContext context)
     {
-        var userRepository = new UserRepository(context);
-        var collectionRepository = new CollectionRepository(context);
-        var ruleRepository = new RuleRepository(context);
-        var neighborhoodRepository = new NeighborhoodRepository(context);
+        var logger = new LoggerFactory().CreateLogger<UnitOfWork>();
+        var userRepository = new UserRepository(context, logger);
+        var collectionRepository = new CollectionRepository(context, logger);
+        var ruleRepository = new RuleRepository(context, logger);
+        var neighborhoodRepository = new NeighborhoodRepository(context, logger);
         var userService = new UserService(userRepository, collectionRepository, ruleRepository, neighborhoodRepository);
         var authService = new AuthenticationService(userService);
         return (userService, authService);
