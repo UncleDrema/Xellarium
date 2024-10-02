@@ -4,8 +4,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Xellarium.Authentication;
 using Xellarium.BusinessLogic.Models;
-using Xellarium.BusinessLogic.Repository;
 using Xellarium.BusinessLogic.Services;
 using Xellarium.Shared.DTO;
 
@@ -46,6 +46,7 @@ public class NeighbourhoodsController(INeighborhoodService _service, IMapper map
     
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
+    [Authorize(Policy = JwtAuthPolicies.Admin)]
     public async Task<ActionResult<NeighborhoodDTO>> AddNeighbourhood(PostNeighborhoodDTO neighborhood)
     {
         var neighbourhoodEntity = mapper.Map<Neighborhood>(neighborhood);
@@ -58,6 +59,7 @@ public class NeighbourhoodsController(INeighborhoodService _service, IMapper map
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [Authorize(Policy = JwtAuthPolicies.Admin)]
     public async Task<ActionResult<NeighborhoodDTO>> UpdateNeighbourhood(int id, NeighborhoodDTO neighborhood)
     {
         if (id != neighborhood.Id)
@@ -81,6 +83,7 @@ public class NeighbourhoodsController(INeighborhoodService _service, IMapper map
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [Authorize(Policy = JwtAuthPolicies.Admin)]
     public async Task<IActionResult> DeleteNeighbourhood(int id)
     {
         if (!await _service.NeighborhoodExists(id))

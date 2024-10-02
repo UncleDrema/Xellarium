@@ -14,257 +14,157 @@ public class ApiLogic : IApiLogic
         _httpClientFactory = httpClientFactory;
     }
 
+    private HttpClient Client() => _httpClientFactory.CreateClient("API");
+
+    private async Task<ResultCode> PostAsync(string uri)
+    {
+        var response = await Client().PostAsync(uri, null);
+        if (response.IsSuccessStatusCode)
+        {
+            return ResultCode.Ok;
+        }
+        else if (response.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            return ResultCode.Unauthorized;
+        }
+        else
+        {
+            return ResultCode.Error;
+        }
+    }
+    
+    private async Task<ResultCode> DeleteAsync(string uri)
+    {
+        var response = await Client().DeleteAsync(uri);
+        if (response.IsSuccessStatusCode)
+        {
+            return ResultCode.Ok;
+        }
+        else if (response.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            return ResultCode.Unauthorized;
+        }
+        else
+        {
+            return ResultCode.Error;
+        }
+    }
+    
+    private async Task<(ResultCode, TRes?)> PostAsync<TBody, TRes>(string uri, TBody body)
+    {
+        var json = JsonSerializer.Serialize(body);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        var response = await Client().PostAsync(uri, content);
+        if (response.IsSuccessStatusCode)
+        {
+            return (ResultCode.Ok, await response.Content.ReadFromJsonAsync<TRes>());
+        }
+        else if (response.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            return (ResultCode.Unauthorized, default);
+        }
+        else
+        {
+            Console.WriteLine($"POST Error {response.StatusCode}: {await response.Content.ReadAsStringAsync()}");
+            return (ResultCode.Error, default);
+        }
+    }
+
+    private async Task<(ResultCode, TRes?)> GetAsync<TRes>(string uri)
+    {
+        var response = await Client().GetAsync(uri);
+        if (response.IsSuccessStatusCode)
+        {
+            return (ResultCode.Ok, await response.Content.ReadFromJsonAsync<TRes>());
+        }
+        else if (response.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            return (ResultCode.Unauthorized, default);
+        }
+        else
+        {
+            Console.WriteLine($"GET Error {response.StatusCode}: {await response.Content.ReadAsStringAsync()}");
+            return (ResultCode.Error, default);
+        }
+    }
+
     public async Task<(ResultCode, AuthenticatedTokenDTO?)> Login(UserLoginDTO login)
     {
-        var client = _httpClientFactory.CreateClient("API");
-        var json = JsonSerializer.Serialize(login);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var response = await client.PostAsync("api/v2/authentication/login", content);
-        
-        if (response.IsSuccessStatusCode)
-        {
-            var authResponse = await response.Content.ReadFromJsonAsync<AuthenticatedTokenDTO>();
-            return (ResultCode.Ok, authResponse);
-        }
-        if (response.StatusCode == HttpStatusCode.Conflict)
-        {
-            return (ResultCode.Error, null);
-        }
-        else
-        {
-            return (ResultCode.Unauthorized, null);
-        }
+        return await PostAsync<UserLoginDTO, AuthenticatedTokenDTO>("api/v2/authentication/login", login);
     }
-    
+
     public async Task<(ResultCode, AuthenticatedTokenDTO?)> Register(UserLoginDTO login)
     {
-        var client = _httpClientFactory.CreateClient("API");
-        var json = JsonSerializer.Serialize(login);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var response = await client.PostAsync("api/v2/authentication/register", content);
-        
-        if (response.IsSuccessStatusCode)
-        {
-            var authResponse = await response.Content.ReadFromJsonAsync<AuthenticatedTokenDTO>();
-            return (ResultCode.Ok, authResponse);
-        }
-        if (response.StatusCode == HttpStatusCode.Conflict)
-        {
-            return (ResultCode.Error, null);
-        }
-        else
-        {
-            return (ResultCode.Unauthorized, null);
-        }
+        return await PostAsync<UserLoginDTO, AuthenticatedTokenDTO>("api/v2/authentication/register", login);
     }
 
-    public async Task<(ResultCode, UserDTO[])> GetAllUsers()
+    public async Task<(ResultCode, UserDTO[]?)> GetAllUsers()
     {
-        var client = _httpClientFactory.CreateClient("API");
-        var response = (await client.GetFromJsonAsync<UserDTO[]>("api/v2/users"))!;
-        return (ResultCode.Ok, response);
+        return await GetAsync<UserDTO[]>("api/v2/users");
     }
-    
-    public async Task<(ResultCode, UserDTO?)> GetUser(int id)
+
+    public async Task<(ResultCode, NeighborhoodDTO[]?)> GetNeighborhoods()
     {
-        var client = _httpClientFactory.CreateClient("API");
-        var response = await client.GetAsync($"api/v2/users/{id}");
-        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-        {
-            return (ResultCode.Error, null);
-        }
-        else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-        {
-            return (ResultCode.Unauthorized, null);
-        }
-        else if (!response.IsSuccessStatusCode)
-        {
-            return (ResultCode.Error, null);
-        }
-        var user = await response.Content.ReadFromJsonAsync<UserDTO>();
-        return (ResultCode.Ok, user);
+        return await GetAsync<NeighborhoodDTO[]>("api/v2/neighbourhoods");
     }
-    
-    public async Task<(ResultCode, NeighborhoodDTO[])> GetNeighborhoods()
-    {
-        var client = _httpClientFactory.CreateClient("API");
-        var response = (await client.GetFromJsonAsync<NeighborhoodDTO[]>("api/v2/neighbourhoods"))!;
-        return (ResultCode.Ok, response);
-    }
-    
+
     public async Task<(ResultCode, NeighborhoodDTO?)> GetNeighborhood(int id)
     {
-        var client = _httpClientFactory.CreateClient("API");
-        var response = await client.GetAsync($"api/v2/neighbourhoods/{id}");
-        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-        {
-            return (ResultCode.Error, null);
-        }
-        else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-        {
-            return (ResultCode.Unauthorized, null);
-        }
-        else if (!response.IsSuccessStatusCode)
-        {
-            return (ResultCode.Error, null);
-        }
-        var neighbourhood = await response.Content.ReadFromJsonAsync<NeighborhoodDTO>();
-        return (ResultCode.Ok, neighbourhood);
-    }
-    
-    public async Task<(ResultCode, UserDTO?)> GetProfile()
-    {
-        var client = _httpClientFactory.CreateClient("API");
-        var response = await client.GetAsync("api/v2/profile");
-        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-        {
-            return (ResultCode.Unauthorized, null);
-        }
-        else if (!response.IsSuccessStatusCode)
-        {
-            return (ResultCode.Error, null);
-        }
-        var user = await response.Content.ReadFromJsonAsync<UserDTO>();
-        return (ResultCode.Ok, user);
-    }
-    
-    public async Task DeleteUser(int id)
-    {
-        var client = _httpClientFactory.CreateClient("API");
-        await client.DeleteAsync($"api/v2/users/{id}");
-    }
-    
-    public async Task WarnUser(int id)
-    {
-        var client = _httpClientFactory.CreateClient("API");
-        await client.PostAsync($"api/v2/users/{id}/warn", null);
-    }
-    
-    public async Task<(ResultCode, CollectionDTO?)> GetCollection(int collectionId)
-    {
-        var client = _httpClientFactory.CreateClient("API");
-        var response = await client.GetAsync($"api/v2/collections/{collectionId}");
-        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-        {
-            return (ResultCode.Unauthorized, null);
-        }
-        else if (!response.IsSuccessStatusCode)
-        {
-            return (ResultCode.Error, null);
-        }
-        
-        var collection = await response.Content.ReadFromJsonAsync<CollectionDTO>();
-        return (ResultCode.Ok, collection);
-    }
-    
-    public async Task<RuleDTO> GetRule(int userId, int ruleId)
-    {
-        var client = _httpClientFactory.CreateClient("API");
-        var response = await client.GetAsync($"api/v2/users/{userId}/rules/{ruleId}");
-        var rule = await response.Content.ReadFromJsonAsync<RuleDTO>();
-        return rule!;
+        return await GetAsync<NeighborhoodDTO>($"api/v2/neighbourhoods/{id}");
     }
 
-    public async Task<RuleDTO> GetRule(int ruleId)
+    public async Task<(ResultCode, UserDTO?)> GetProfile()
     {
-        var client = _httpClientFactory.CreateClient("API");
-        var response = await client.GetAsync($"api/v2/rules/{ruleId}");
-        var rule = await response.Content.ReadFromJsonAsync<RuleDTO>();
-        return rule!;
+        return await GetAsync<UserDTO>("api/v2/users/current");
     }
-    
-    public async Task<(ResultCode, IEnumerable<RuleReferenceDTO>?)> GetCollectionRules(int collectionId)
+
+    public async Task<(ResultCode, UserDTO?)> GetUser(int id)
     {
-        var client = _httpClientFactory.CreateClient("API");
-        var response = await client.GetAsync($"api/v2/collections/{collectionId}/contained_rules");
-        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-        {
-            return (ResultCode.Unauthorized, Array.Empty<RuleReferenceDTO>());
-        }
-        else if (!response.IsSuccessStatusCode)
-        {
-            return (ResultCode.Error, Array.Empty<RuleReferenceDTO>());
-        }
-        
-        var responseContent = await response.Content.ReadAsStringAsync();
-        var rules = JsonSerializer.Deserialize<RuleReferenceDTO[]>(responseContent);
-        return (ResultCode.Ok, rules);
+        return await GetAsync<UserDTO>($"api/v2/users/{id}");
+    }
+
+    public async Task<ResultCode> DeleteUser(int id)
+    {
+        return await DeleteAsync($"api/v2/users/{id}");
+    }
+
+    public async Task<ResultCode> WarnUser(int id)
+    {
+        return await PostAsync($"api/v2/users/{id}/warn");
+    }
+
+    public async Task<(ResultCode, CollectionDTO?)> GetCollection(int collectionId)
+    {
+        return await GetAsync<CollectionDTO>($"api/v2/collections/{collectionId}");
+    }
+
+    public async Task<(ResultCode, RuleDTO?)> GetRule(int ruleId)
+    {
+        return await GetAsync<RuleDTO>($"api/v2/rules/{ruleId}");
+    }
+
+    public async Task<(ResultCode, IEnumerable<RuleDTO>?)> GetCollectionRules(int collectionId)
+    {
+        return await GetAsync<RuleDTO[]>($"api/v2/collections/{collectionId}/rules");
     }
 
     public async Task<(ResultCode, IEnumerable<CollectionDTO>?)> GetPublicCollections()
     {
-        var client = _httpClientFactory.CreateClient("API");
-        
-        var response = await client.GetAsync("api/v2/users/1/accessibleCollections");
-        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-        {
-            return (ResultCode.Unauthorized, null);
-        }
-        else if (!response.IsSuccessStatusCode)
-        {
-            return (ResultCode.Error, null);
-        }
-        
-        var responseContent = await response.Content.ReadAsStringAsync();
-        var collections = JsonSerializer.Deserialize<CollectionDTO[]>(responseContent);
-        return (ResultCode.Ok, collections);
+        return await GetAsync<CollectionDTO[]>($"api/v2/collections");
     }
-    
+
     public async Task<(ResultCode, CollectionDTO?)> AddCollection(PostCollectionDTO collectionPostDto)
     {
-        var client = _httpClientFactory.CreateClient("API");
-        var json = JsonSerializer.Serialize(collectionPostDto);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var response = await client.PostAsync($"api/v2/users/collections", content);
-
-        if (response.StatusCode == HttpStatusCode.Unauthorized)
-        {
-            return (ResultCode.Unauthorized, null);
-        }
-        else if (!response.IsSuccessStatusCode)
-        {
-            return (ResultCode.Error, null);
-        }
-        else
-        {
-            var responseContent = await response.Content.ReadAsStringAsync();
-            var responseDto = JsonSerializer.Deserialize<CollectionDTO>(responseContent);
-            
-            return (ResultCode.Ok, responseDto);
-        }
-    }
-    
-    public async Task<(ResultCode, RuleDTO?)> AddRule(int userId, PostRuleDTO ruleDto)
-    {
-        var client = _httpClientFactory.CreateClient("API");
-        var json = JsonSerializer.Serialize(ruleDto);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var response = await client.PostAsync($"api/v2/users/{userId}/rules", content);
-        
-        if (response.StatusCode == HttpStatusCode.Unauthorized)
-        {
-            return (ResultCode.Unauthorized, null);
-        }
-        else if (!response.IsSuccessStatusCode)
-        {
-            return (ResultCode.Error, null);
-        }
-        else
-        {
-            var responseContent = await response.Content.ReadAsStringAsync();
-            var responseDto = JsonSerializer.Deserialize<RuleDTO>(responseContent);
-            return (ResultCode.Ok, responseDto);
-        }
+        return await PostAsync<PostCollectionDTO, CollectionDTO>("api/v2/collections", collectionPostDto);
     }
 
-    public async Task AddRuleToCollection(int collectionid, int ruleId)
+    public async Task<(ResultCode, RuleDTO?)> AddRule(PostRuleDTO rulePostDto)
     {
-        var client = _httpClientFactory.CreateClient("API");
-        var json = JsonSerializer.Serialize(new RuleReferenceDTO
-        {
-            Id = ruleId
-        });
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var response = await client.PostAsync($"api/v2/collections/contained_rules", content);
+        return await PostAsync<PostRuleDTO, RuleDTO>("api/v2/rules", rulePostDto);
+    }
+
+    public async Task<(ResultCode, RuleDTO?)> AddRuleToCollection(int collectionId, PostRuleDTO rulePostDto)
+    {
+        return await PostAsync<PostRuleDTO, RuleDTO>($"api/v2/collections/{collectionId}/rules", rulePostDto);
     }
 }

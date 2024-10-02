@@ -28,10 +28,9 @@ else
         {
             NavigationManager.NavigateTo("/");
         }
-        var (result, user) = await ApiLogic.GetProfile();
+        var (result, rule) = await ApiLogic.GetRule(ruleId);
         if (result == ResultCode.Ok)
         {
-            var rule = await ApiLogic.GetRule(user!.Id, ruleId);
             if (rule != null)
             {
                 displayRule = rule;

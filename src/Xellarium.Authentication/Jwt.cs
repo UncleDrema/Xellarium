@@ -48,7 +48,8 @@ public static class JwtExtensions
         
         var logger = sp.GetRequiredService<ILogger<AuthenticationFeature>>();
 
-        bool MakeAssertionOnUser(AuthorizationHandlerContext context, Func<ClaimsPrincipal?, bool> assertion)
+        bool MakeAssertionOnUser(AuthorizationHandlerContext context,
+            Func<HttpContext, ClaimsPrincipal?, bool> assertion)
         {
             if (context.Resource is not DefaultHttpContext httpContext)
             {
@@ -74,15 +75,18 @@ public static class JwtExtensions
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtConfig.SigningKey))
             };
 
-            var token = httpContext.Request.Headers[HeaderNames.Authorization].ToString().Replace("Bearer ", "").Replace("bearer ", "");
+            var tokenStringValues = httpContext.Request.Headers.Authorization;
+            logger.LogInformation("Authorizing token ({Count}) {Token}", tokenStringValues.Count, tokenStringValues.ToString());
+            var token = tokenStringValues.ToString().Replace("Bearer ", "").Replace("bearer ", "");
+            logger.LogInformation("After postprocess: \"{Token}\"", token);
             
             var user = tokenHandler.ValidateToken(token, validationParameters, out var validatedToken);
-            return assertion(user);
+            return assertion(httpContext, user);
         }
         
         builder.Services.AddAuthorization(options =>
         {
-            void AddPolicy(string policyName, Func<ClaimsPrincipal?, bool> assertion)
+            void AddPolicy(string policyName, Func<HttpContext, ClaimsPrincipal?, bool> assertion)
             {
                 options.AddPolicy(policyName, policy =>
                 {
@@ -91,9 +95,9 @@ public static class JwtExtensions
             }
             
             options.DefaultPolicy = new AuthorizationPolicyBuilder(Jwt.AuthType).RequireAssertion(
-                context => MakeAssertionOnUser(context, user => user is not null)).Build();
+                context => MakeAssertionOnUser(context, (_, user) => user is not null)).Build();
             
-            AddPolicy(Policies.Admin, user =>
+            AddPolicy(JwtAuthPolicies.Admin, (_, user) =>
             {
                 if (user is null)
                 {
@@ -102,6 +106,18 @@ public static class JwtExtensions
 
                 return user.IsInRole(UserRole.Admin);
             });
+            
+            AddPolicy(JwtAuthPolicies.AdminOrUser, (_, user) =>
+            {
+                if (user is null)
+                {
+                    return false;
+                }
+                
+                return user.IsInRole(UserRole.Admin) || user.IsInRole(UserRole.User);
+            });
         });
+        
+        
     }
 }

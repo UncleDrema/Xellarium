@@ -63,6 +63,7 @@ public static class AutoMapperConfiguration
                 */
             CreateMap<Rule, RuleDTO>()
                 .ForMember(dest => dest.OwnerId, opt => opt.MapFrom(src => src.Owner.Id))
+                .ForMember(dest => dest.NeighborhoodId, opt => opt.MapFrom(src => src.Neighborhood.Id))
                 .ForMember(dest => dest.CollectionReferences, opt => opt.MapFrom(src => src.Collections));
             /*
             CreateMap<RuleDTO, Rule>()

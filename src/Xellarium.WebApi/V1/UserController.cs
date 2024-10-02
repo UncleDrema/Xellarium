@@ -10,7 +10,7 @@ using Xellarium.BusinessLogic;
 using Xellarium.BusinessLogic.Models;
 using Xellarium.BusinessLogic.Services;
 using Xellarium.Shared.DTO;
-using static Xellarium.Authentication.Policies;
+using static Xellarium.Authentication.CookiesAuthPolicies;
 using IAuthenticationService = Xellarium.BusinessLogic.Services.IAuthenticationService;
 
 namespace Xellarium.WebApi.V1;

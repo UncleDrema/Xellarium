@@ -13,6 +13,7 @@ public class RuleRepository(XellariumContext context, ILogger logger)
     {
         return await _context.Rules.Include(r => r.Owner)
             .Include(r => r.Collections)
+            .Include(r => r.Neighborhood)
             .ToListAsync();
     }
     
@@ -20,6 +21,7 @@ public class RuleRepository(XellariumContext context, ILogger logger)
     {
         return await _context.Rules.Include(r => r.Owner)
             .Include(r => r.Collections)
+            .Include(r => r.Neighborhood)
             .Where(r => ids.Contains(r.Id))
             .ToListAsync();
     }
@@ -28,6 +30,7 @@ public class RuleRepository(XellariumContext context, ILogger logger)
     {
         return await _context.Rules.Include(r => r.Owner)
             .Include(r => r.Collections)
+            .Include(r => r.Neighborhood)
             .FirstOrDefaultAsync(r => r.Id == id);
     }
 }

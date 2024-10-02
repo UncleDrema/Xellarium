@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Xellarium.Authentication;
 using Xellarium.BusinessLogic.Models;
 using Xellarium.BusinessLogic.Services;
 using Xellarium.Shared.DTO;
@@ -23,6 +24,7 @@ public class UsersController(IUserService _service, IMapper mapper,
 {
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [Authorize(Policy = JwtAuthPolicies.AdminOrUser)]
     public async Task<ActionResult<IEnumerable<UserDTO>>> GetUsers()
     {
         var users = await _service.GetUsers();
@@ -32,6 +34,7 @@ public class UsersController(IUserService _service, IMapper mapper,
     [HttpGet("{id}")]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [Authorize(Policy = JwtAuthPolicies.AdminOrUser)]
     public async Task<ActionResult<UserDTO>> GetUser(int id)
     {
         var user = await _service.GetUser(id);
@@ -46,6 +49,7 @@ public class UsersController(IUserService _service, IMapper mapper,
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [Authorize(Policy = JwtAuthPolicies.Admin)]
     public async Task<ActionResult<UserDTO>> AddUser(PostUserDTO user)
     {
         if (await _service.UserExists(user.Name))
@@ -62,6 +66,7 @@ public class UsersController(IUserService _service, IMapper mapper,
     [HttpPut("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [Authorize(Policy = JwtAuthPolicies.Admin)]
     public async Task<ActionResult<UserDTO>> UpdateUser(int id, UserDTO user)
     {
         if (id != user.Id)
@@ -90,6 +95,7 @@ public class UsersController(IUserService _service, IMapper mapper,
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [Authorize(Policy = JwtAuthPolicies.Admin)]
     public async Task<IActionResult> DeleteUser(int id)
     {
         if (!await _service.UserExists(id))
@@ -104,6 +110,7 @@ public class UsersController(IUserService _service, IMapper mapper,
     [HttpGet("{id}/collections")]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [Authorize(Policy = JwtAuthPolicies.AdminOrUser)]
     public async Task<ActionResult<IEnumerable<CollectionDTO>>> GetUserCollections(int id)
     {
         var collections = await _service.GetUserCollections(id);
@@ -113,6 +120,7 @@ public class UsersController(IUserService _service, IMapper mapper,
     [HttpGet("{id}/rules")]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [Authorize(Policy = JwtAuthPolicies.AdminOrUser)]
     public async Task<ActionResult<IEnumerable<RuleDTO>>> GetUserRules(int id)
     {
         var rules = await _service.GetUserRules(id);
@@ -122,6 +130,7 @@ public class UsersController(IUserService _service, IMapper mapper,
     [HttpPost("{id}/warn")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [Authorize(Policy = JwtAuthPolicies.Admin)]
     public async Task<IActionResult> WarnUser(int id)
     {
         if (!await _service.UserExists(id))
@@ -136,6 +145,7 @@ public class UsersController(IUserService _service, IMapper mapper,
     [HttpGet("{id}/collections/{collectionId}")]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [Authorize(Policy = JwtAuthPolicies.AdminOrUser)]
     public async Task<ActionResult<CollectionDTO>> GetCollection(int id, int collectionId)
     {
         var collection = await _service.GetCollection(id, collectionId);
@@ -150,6 +160,7 @@ public class UsersController(IUserService _service, IMapper mapper,
     [HttpGet("{id}/rules/{ruleId}")]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [Authorize(Policy = JwtAuthPolicies.AdminOrUser)]
     public async Task<ActionResult<RuleDTO>> GetRule(int id, int ruleId)
     {
         var rule = await _service.GetRule(id, ruleId);
@@ -164,6 +175,7 @@ public class UsersController(IUserService _service, IMapper mapper,
     [HttpGet("current")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [Authorize(Policy = JwtAuthPolicies.AdminOrUser)]
     public async Task<ActionResult<UserDTO>> GetCurrentUser()
     {
         if (!HttpContext.TryGetAuthenticatedUser(out var authUser))
@@ -177,6 +189,7 @@ public class UsersController(IUserService _service, IMapper mapper,
     [HttpGet("current/collections")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [Authorize(Policy = JwtAuthPolicies.AdminOrUser)]
     public async Task<ActionResult<IEnumerable<CollectionDTO>>>
         GetCurrentUserCollections()
     {
@@ -191,6 +204,7 @@ public class UsersController(IUserService _service, IMapper mapper,
     [HttpGet("current/rules")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [Authorize(Policy = JwtAuthPolicies.AdminOrUser)]
     public async Task<ActionResult<IEnumerable<RuleDTO>>> GetCurrentUserRules()
     {
         if (!HttpContext.TryGetAuthenticatedUser(out var authUser))
@@ -201,26 +215,10 @@ public class UsersController(IUserService _service, IMapper mapper,
         return await GetUserRules(authUser!.Id);
     }
     
-    [HttpPost("current/collections")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<CollectionDTO>> AddCollectionToCurrentUser(PostCollectionDTO collection)
-    {
-        if (!HttpContext.TryGetAuthenticatedUser(out var authUser))
-        {
-            return Unauthorized();
-        }
-        
-        var collectionEntity = mapper.Map<Collection>(collection);
-        await _service.AddCollection(authUser.Id, collectionEntity);
-        return CreatedAtAction(nameof(GetCollection), 
-            new {id = collectionEntity.Owner.Id, collectionId = collectionEntity.Id},
-            mapper.Map<CollectionDTO>(collectionEntity));
-    }
-    
     [HttpGet("current/collections/{collectionId}")]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [Authorize(Policy = JwtAuthPolicies.AdminOrUser)]
     public async Task<ActionResult<CollectionDTO>> GetCurrentCollection(int collectionId)
     {
         if (!HttpContext.TryGetAuthenticatedUser(out var authUser))
@@ -234,6 +232,7 @@ public class UsersController(IUserService _service, IMapper mapper,
     [HttpGet("current/rules/{ruleId}")]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [Authorize(Policy = JwtAuthPolicies.AdminOrUser)]
     public async Task<ActionResult<RuleDTO>> GetCurrentRule(int ruleId)
     {
         if (!HttpContext.TryGetAuthenticatedUser(out var authUser))

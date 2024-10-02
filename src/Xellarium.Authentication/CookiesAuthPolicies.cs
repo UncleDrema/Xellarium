@@ -1,6 +1,6 @@
 ﻿namespace Xellarium.Authentication;
 
-public static class Policies
+public static class CookiesAuthPolicies
 {
     public const string Admin = "Admin";
     public const string AdminOrOwner = "AdminOrOwner";

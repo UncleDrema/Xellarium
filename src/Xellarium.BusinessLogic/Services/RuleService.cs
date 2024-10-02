@@ -8,12 +8,12 @@ public class RuleService(IUnitOfWork unitOfWork)
 {
     public async Task<IEnumerable<Rule>> GetRules()
     {
-        return await unitOfWork.Rules.GetAll();
+        return await unitOfWork.Rules.GetAllInclude();
     }
 
     public async Task<Rule?> GetRule(int id)
     {
-        return await unitOfWork.Rules.Get(id);
+        return await unitOfWork.Rules.GetInclude(id);
     }
 
     public async Task AddRule(Rule rule)
@@ -40,7 +40,7 @@ public class RuleService(IUnitOfWork unitOfWork)
     
     public async Task<IEnumerable<Collection>> GetRuleCollections(int ruleId)
     {
-        var rule = await unitOfWork.Rules.Get(ruleId);
+        var rule = await unitOfWork.Rules.GetInclude(ruleId);
         if (rule == null) throw new ArgumentException("Rule not found");
         return rule.Collections;
     }
@@ -52,7 +52,7 @@ public class RuleService(IUnitOfWork unitOfWork)
 
     public async Task<User?> GetOwner(int ruleId)
     {
-        var rule = await unitOfWork.Rules.Get(ruleId);
+        var rule = await unitOfWork.Rules.GetInclude(ruleId);
         return rule?.Owner;
     }
 }

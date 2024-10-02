@@ -205,11 +205,7 @@ else
                 GenericRule = genericRule,
                 NeighborhoodId = newRule.NeighborhoodId
             };
-            var authState = await AuthState.GetAuthenticationStateAsync();
-            var userIdRaw = authState.User.Claims.First(c => c.Type == ClaimTypes.NameIdentifier).Value;
-            var userId = int.Parse(userIdRaw);
-            var (result, addedRule) = await ApiLogic.AddRule(userId, rule);
-            await ApiLogic.AddRuleToCollection(newRule.CollectionId, addedRule.Id);
+            var (result, addedRule) = await ApiLogic.AddRuleToCollection(newRule.CollectionId, rule);
             
             if (result == ResultCode.Ok)
             {

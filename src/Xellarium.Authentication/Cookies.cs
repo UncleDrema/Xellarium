@@ -59,18 +59,18 @@ public static class CookiesExtensions
         
         builder.Services.AddAuthorization(options =>
         {
-            options.AddPolicy(Policies.Admin, policy =>
+            options.AddPolicy(CookiesAuthPolicies.Admin, policy =>
                 policy.RequireAssertion(context =>
                 {
                     return true;
                     return context.User.IsInRole(UserRole.Admin);
                 }));
             
-            options.AddPolicy(Policies.AdminOrOwner, policy =>
+            options.AddPolicy(CookiesAuthPolicies.AdminOrOwner, policy =>
                 policy.RequireAssertion(context =>
                 {
                     return true;
-                    logger.LogInformation("Checking {Policy} of user {Id}", Policies.AdminOrOwner, context.User.FindFirstValue(ClaimTypes.NameIdentifier));
+                    logger.LogInformation("Checking {Policy} of user {Id}", CookiesAuthPolicies.AdminOrOwner, context.User.FindFirstValue(ClaimTypes.NameIdentifier));
                     if (context.User.IsInRole(UserRole.Admin))
                     {
                         logger.LogInformation("User is admin");
@@ -89,11 +89,11 @@ public static class CookiesExtensions
                             context.User.HasClaim(c => c.Type == ClaimTypes.NameIdentifier && c.Value == userId));
                 }));
             
-            options.AddPolicy(Policies.CanAccessCollection, policy =>
+            options.AddPolicy(CookiesAuthPolicies.CanAccessCollection, policy =>
                 policy.RequireAssertion(async context =>
                 {
                     return true;
-                    logger.LogInformation("Checking {Policy} of user {Id}", Policies.CanAccessCollection, context.User.FindFirstValue(ClaimTypes.NameIdentifier));
+                    logger.LogInformation("Checking {Policy} of user {Id}", CookiesAuthPolicies.CanAccessCollection, context.User.FindFirstValue(ClaimTypes.NameIdentifier));
                     if (context.User.IsInRole(UserRole.Admin))
                         return true;
 

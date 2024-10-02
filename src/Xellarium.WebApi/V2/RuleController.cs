@@ -1,12 +1,15 @@
-﻿using Asp.Versioning;
+﻿using System.Security.Claims;
+using System.Text.Json;
+using Asp.Versioning;
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Xellarium.Authentication;
 using Xellarium.BusinessLogic.Models;
 using Xellarium.BusinessLogic.Services;
+using Xellarium.Shared;
 using Xellarium.Shared.DTO;
 
 namespace Xellarium.WebApi.V2;
@@ -24,6 +27,7 @@ public class RulesController(IRuleService _service, IUserService _userService, I
 {
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [Authorize(Policy = JwtAuthPolicies.Admin)]
     public async Task<ActionResult<IEnumerable<RuleDTO>>> GetRules()
     {
         var rules = await _service.GetRules();
@@ -41,6 +45,11 @@ public class RulesController(IRuleService _service, IUserService _userService, I
             return NotFound();
         }
 
+        if (!HttpContext.TryGetAuthenticatedUser(out var authUser))
+        {
+            return NotFound();
+        }
+
         return Ok(mapper.Map<RuleDTO>(rule));
     }
     
@@ -49,6 +58,8 @@ public class RulesController(IRuleService _service, IUserService _userService, I
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [Authorize(Policy = JwtAuthPolicies.AdminOrUser)]
+    [EndpointSummary("Adds new rule for current user")]
     public async Task<ActionResult<RuleDTO>> AddRule(PostRuleDTO rule)
     {
         if (!HttpContext.TryGetAuthenticatedUser(out var authUser))
@@ -83,6 +94,7 @@ public class RulesController(IRuleService _service, IUserService _userService, I
     [HttpPut("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [Authorize(Policy = JwtAuthPolicies.AdminOrUser)]
     public async Task<ActionResult<RuleDTO>> UpdateRule(int id, RuleDTO rule)
     {
         if (id != rule.Id)
@@ -90,53 +102,91 @@ public class RulesController(IRuleService _service, IUserService _userService, I
             return BadRequest();
         }
 
-        var eRule = await _service.GetRule(id);
-        if (eRule is null)
+        var ruleEntity = await _service.GetRule(id);
+        if (ruleEntity is null)
         {
             return NotFound($"Rule with id={id} is not found");
         }
         
-        eRule.Name = rule.Name;
-        eRule.GenericRule = rule.GenericRule;
-        eRule.Owner = (await _userService.GetUser(rule.OwnerId))!;
-        eRule.Neighborhood = (await _neighborhoodService.GetNeighborhood(rule.NeighborhoodId))!;
-        eRule.Collections = rule.CollectionReferences.Select(c => _collectionService.GetCollection(c.Id).Result).ToList()!;
+        if (!HttpContext.TryGetAuthenticatedUser(out var authUser) ||
+            !authUser!.CanAccessResourceOfUser(ruleEntity.Owner.Id))
+        {
+            return Unauthorized("Only owner or admin can change rule");
+        }
+
+        if (rule.OwnerId != ruleEntity.Owner.Id &&
+            authUser.Role != UserRole.Admin)
+        {
+            return Unauthorized("Only admin can change rule ownership");
+        }
+
+        var neighborhood = await _neighborhoodService.GetNeighborhood(rule.NeighborhoodId);
+
+        if (neighborhood is null)
+        {
+            return NotFound($"Not found neighborhood with id {rule.NeighborhoodId}");
+        }
+
+        if (ruleEntity.Owner.Id != rule.OwnerId)
+        {
+            ruleEntity.Owner = (await _userService.GetUser(rule.OwnerId))!;
+        }
         
-        await _service.UpdateRule(eRule);
+        ruleEntity.Name = rule.Name;
+        ruleEntity.GenericRule = rule.GenericRule;
+        ruleEntity.Neighborhood = neighborhood;
+        ruleEntity.Collections = rule.CollectionReferences.Select(c => _collectionService.GetCollection(c.Id).Result).ToList()!;
         
-        return Ok(mapper.Map<RuleDTO>(eRule));
+        await _service.UpdateRule(ruleEntity);
+        
+        return Ok(mapper.Map<RuleDTO>(ruleEntity));
     }
     
     [HttpPatch("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [Authorize(Policy = JwtAuthPolicies.AdminOrUser)]
     public async Task<ActionResult<RuleDTO>> PatchRule(int id, RulePatchDTO patchDto)
     {
-        var rule = await _service.GetRule(id);
-        if (rule is null)
+        var ruleEntity = await _service.GetRule(id);
+        if (ruleEntity is null)
         {
             return NotFound($"Rule with id={id} is not found");
         }
+        
+        if (!HttpContext.TryGetAuthenticatedUser(out var authUser) ||
+            !authUser!.CanAccessResourceOfUser(ruleEntity.Owner.Id))
+        {
+            return Unauthorized();
+        }
 
         if (patchDto.Name is not null)
-            rule.Name = patchDto.Name;
+            ruleEntity.Name = patchDto.Name;
         if (patchDto.GenericRule is not null)
-            rule.GenericRule = patchDto.GenericRule;
+            ruleEntity.GenericRule = patchDto.GenericRule;
         if (patchDto.NeighborhoodId is not null)
-            rule.Neighborhood = (await _neighborhoodService.GetNeighborhood(patchDto.NeighborhoodId.Value))!;
+            ruleEntity.Neighborhood = (await _neighborhoodService.GetNeighborhood(patchDto.NeighborhoodId.Value))!;
         
-        await _service.UpdateRule(rule);
-        return Ok(mapper.Map<RuleDTO>(rule));
+        await _service.UpdateRule(ruleEntity);
+        return Ok(mapper.Map<RuleDTO>(ruleEntity));
     }
     
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [Authorize(Policy = JwtAuthPolicies.AdminOrUser)]
     public async Task<IActionResult> DeleteRule(int id)
     {
-        if (!await _service.RuleExists(id))
+        var ruleEntity = await _service.GetRule(id);
+        if (ruleEntity is null)
         {
             return NotFound();
+        }
+        
+        if (!HttpContext.TryGetAuthenticatedUser(out var authUser) ||
+            !authUser!.CanAccessResourceOfUser(ruleEntity.Owner.Id))
+        {
+            return Unauthorized();
         }
         
         await _service.DeleteRule(id);
@@ -146,6 +196,7 @@ public class RulesController(IRuleService _service, IUserService _userService, I
     [HttpGet("{id}/owner")]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [Authorize(Policy = JwtAuthPolicies.AdminOrUser)]
     public async Task<ActionResult<UserDTO>> GetOwner(int id)
     {
         var owner = await _service.GetOwner(id);

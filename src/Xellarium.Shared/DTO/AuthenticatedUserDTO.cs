@@ -8,6 +8,11 @@ public class AuthenticatedUserDTO
     public required string Name { get; init; } = string.Empty;
     public required UserRole Role { get; init; } = UserRole.Guest;
 
+    public bool CanAccessResourceOfUser(int userId)
+    {
+        return Role == UserRole.Admin || Id == userId;
+    }
+
     public IEnumerable<Claim> ToClaims()
     {
         return new Claim[]

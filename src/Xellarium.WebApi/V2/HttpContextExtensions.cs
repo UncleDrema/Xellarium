@@ -11,16 +11,13 @@ public static class HttpContextExtensions
     public static bool TryGetAuthenticatedUser(this HttpContext httpContext, out AuthenticatedUserDTO? authUser)
     {
         authUser = null;
-        var token = httpContext.Request.Headers.Authorization.ToString();
-        try
-        {
-            authUser = AuthorizationUtils.ParseJwt(token);
-        }
-        catch (Exception e)
+        var token = httpContext.Request.Headers.Authorization;
+        if (token.Count == 0)
         {
             return false;
         }
 
+        authUser = AuthorizationUtils.ParseJwt(token[0]!);
         return true;
     }
 }

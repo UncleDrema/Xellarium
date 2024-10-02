@@ -47,7 +47,8 @@ else
                 var ruleList = new List<RuleDTO>();
                 foreach (var ruleRef in ruleReferences)
                 {
-                    ruleList.Add(await ApiLogic.GetRule(ruleRef.Id));
+                    var (ruleGetResultCode, rule) = await ApiLogic.GetRule(ruleRef.Id);
+                    ruleList.Add(rule);
                 }
                 rules = ruleList.ToArray();
                 errorMessage = string.Empty;

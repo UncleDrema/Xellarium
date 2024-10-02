@@ -44,18 +44,24 @@ public static class DataAccessConfiguration
                 logger.LogInformation("Added neighborhood {Name} id={Id}", moore.Name, moore.Id);
                 
                 logger.LogInformation("Adding admin user");
-                var user = await authenticationService.RegisterUser("admin", "admin");
-                logger.LogInformation("Added user {Name} id={Id}", user.Name, user.Id);
+                var adminUser = await authenticationService.RegisterUser("admin", "admin");
+                logger.LogInformation("Added user {Name} id={Id}", adminUser.Name, adminUser.Id);
                 logger.LogInformation("Granting admin user admin role");
-                user.Role = UserRole.Admin;
-                await userService.UpdateUser(user);
+                adminUser.Role = UserRole.Admin;
+                await userService.UpdateUser(adminUser);
+                
+                var guestUser = await authenticationService.RegisterUser("guest", "guest");
+                logger.LogInformation("Added user {Name} id={Id}", guestUser.Name, guestUser.Id);
+                logger.LogInformation("Granting guest user guest role");
+                guestUser.Role = UserRole.Guest;
+                await userService.UpdateUser(guestUser);
                 
                 logger.LogInformation("Adding collection to admin user");
                 var col = new Collection()
                 {
                     Name = "Admin collection"
                 };
-                await userService.AddCollection(user.Id, col);
+                await userService.AddCollection(adminUser.Id, col);
                 logger.LogInformation("Added collection {Name} id={Id}", col.Name, col.Id);
                 
                 logger.LogInformation("Adding rules to admin collection");
@@ -66,7 +72,7 @@ public static class DataAccessConfiguration
                     Name = "Game of Life",
                     Neighborhood = moore
                 };
-                await userService.AddRule(user.Id, golRule);
+                await userService.AddRule(adminUser.Id, golRule);
                 logger.LogInformation("Added rule {Name} id={Id}", golRule.Name, golRule.Id);
                 
                 logger.LogInformation("Adding WireWorld rule");
@@ -76,7 +82,7 @@ public static class DataAccessConfiguration
                     Name = "WireWorld",
                     Neighborhood = moore
                 };
-                await userService.AddRule(user.Id, wireworldRule);
+                await userService.AddRule(adminUser.Id, wireworldRule);
                 logger.LogInformation("Added rule {Name} id={Id}", wireworldRule.Name, wireworldRule.Id);
                 
                 logger.LogInformation("Adding rules to admin collection");

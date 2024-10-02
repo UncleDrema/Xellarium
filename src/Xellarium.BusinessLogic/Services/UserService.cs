@@ -9,7 +9,7 @@ public class UserService(IUnitOfWork unitOfWork, ILogger<UserService> logger) : 
 {
     public async Task<IEnumerable<User>> GetUsers()
     {
-        return await unitOfWork.Users.GetAll();
+        return await unitOfWork.Users.GetAllInclude();
     }
     
     public async Task<IEnumerable<Neighborhood>> GetNeighborhoods()
@@ -19,7 +19,7 @@ public class UserService(IUnitOfWork unitOfWork, ILogger<UserService> logger) : 
 
     public async Task<User?> GetUser(int id)
     {
-        return await unitOfWork.Users.Get(id);
+        return await unitOfWork.Users.GetInclude(id);
     }
     
     public async Task<Neighborhood?> GetNeighborhood(int id)
@@ -120,18 +120,18 @@ public class UserService(IUnitOfWork unitOfWork, ILogger<UserService> logger) : 
     {
         var user = await unitOfWork.Users.Get(id);
         if (user == null) throw new ArgumentException("User not found");
-        await unitOfWork.Collections.Add(collection);
         user.AddCollection(collection);
+        await unitOfWork.Collections.Add(collection);
         await unitOfWork.Users.Update(user);
         await unitOfWork.CompleteAsync();
     }
 
     public async Task AddRule(int userId, Rule rule)
     {
-        var user = await GetUser(userId);
+        var user = await unitOfWork.Users.GetInclude(userId);
         if (user == null) throw new ArgumentException("User not found");
-        await unitOfWork.Rules.Add(rule);
         user.AddRule(rule);
+        await unitOfWork.Rules.Add(rule);
         await unitOfWork.Users.Update(user);
         await unitOfWork.CompleteAsync();
     }
@@ -140,14 +140,14 @@ public class UserService(IUnitOfWork unitOfWork, ILogger<UserService> logger) : 
     {
         var collection = await unitOfWork.Collections.GetInclude(collectionId);
         if (collection == null) throw new ArgumentException("Collection not found");
-        var user = await unitOfWork.Users.Get(userId);
+        var user = await unitOfWork.Users.GetInclude(userId);
         if (user == null) throw new ArgumentException("User not found");
         if (collection.Owner.Id != user.Id) throw new ArgumentException("User is not the owner of the collection");
         if (collection.Rules.Any(r => r.Id == rule.Id)) throw new ArgumentException("Rule already exists in the collection");
-        await unitOfWork.Rules.Add(rule);
         user.AddRule(rule);
-        await unitOfWork.Users.Update(user);
         collection.AddRule(rule);
+        await unitOfWork.Rules.Add(rule);
+        await unitOfWork.Users.Update(user);
         await unitOfWork.Collections.Update(collection);
         await unitOfWork.CompleteAsync();
     }
