@@ -8,7 +8,7 @@ public class RuleBuilder
     private GenericRule _genericRule = new GenericRule();
     private string _name = "Game of Life";
     private User _owner = new User();
-    private int _neighborhoodId = 0;
+    private Neighborhood _neighborhood = new Neighborhood();
     private ICollection<Collection> _collections = new List<Collection>();
     
     public RuleBuilder WithGenericRule(GenericRule genericRule)
@@ -29,15 +29,9 @@ public class RuleBuilder
         return this;
     }
     
-    public RuleBuilder WithNeighborhoodId(int neighborhoodId)
-    {
-        _neighborhoodId = neighborhoodId;
-        return this;
-    }
-    
     public RuleBuilder WithNeighborhood(Neighborhood neighborhood)
     {
-        _neighborhoodId = neighborhood.Id;
+        _neighborhood = neighborhood;
         return this;
     }
     
@@ -54,7 +48,7 @@ public class RuleBuilder
             GenericRule = _genericRule,
             Name = _name,
             Owner = _owner,
-            NeighborhoodId = _neighborhoodId,
+            Neighborhood = _neighborhood,
             Collections = _collections
         };
     }

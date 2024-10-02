@@ -11,7 +11,9 @@ public class CollectionRepository(XellariumContext context, ILogger logger)
 {
     public async Task<IEnumerable<Collection>> GetPublicAndOwned(int userId)
     {
-        return await _context.Collections.Include(col => col.Owner)
+        return await _context.Collections
+            .Where(e => !e.IsDeleted)
+            .Include(col => col.Owner)
             .Include(col => col.Rules)
             .Where(col => !col.IsPrivate || col.Owner.Id == userId)
             .ToListAsync();
@@ -19,7 +21,9 @@ public class CollectionRepository(XellariumContext context, ILogger logger)
     
     public async Task<IEnumerable<Collection>> GetPublic()
     {
-        return await _context.Collections.Include(col => col.Owner)
+        return await _context.Collections
+            .Where(e => !e.IsDeleted)
+            .Include(col => col.Owner)
             .Include(col => col.Rules)
             .Where(col => !col.IsPrivate)
             .ToListAsync();
@@ -27,7 +31,9 @@ public class CollectionRepository(XellariumContext context, ILogger logger)
     
     public async Task<IEnumerable<Collection>> GetAllInclude()
     {
-        return await _context.Collections.Include(col => col.Owner)
+        return await _context.Collections
+            .Where(e => !e.IsDeleted)
+            .Include(col => col.Owner)
             .Include(col => col.Rules)
             .ToListAsync();
     }

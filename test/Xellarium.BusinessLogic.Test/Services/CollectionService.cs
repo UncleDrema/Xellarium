@@ -18,7 +18,7 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
     public CollectionServiceTests(RepositoryMocks mocks)
     {
         _mocks = mocks;
-        _collectionService = new CollectionService(_mocks.CollectionRepositoryMock.Object, _mocks.RuleRepositoryMock.Object);
+        _collectionService = new CollectionService(_mocks.GetUnitOfWork());
     }
 
     [Fact(DisplayName = "GetCollections returns all not deleted collections")]
@@ -28,7 +28,7 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
         var col1 = ObjectMother.EmptyCollection();
         var col2 = ObjectMother.EmptyCollection();
         col2.Delete();
-        _mocks.CollectionRepositoryMock.Setup(repo => repo.GetAll(false)).ReturnsAsync([col1]);
+        _mocks.CollectionRepositoryMock.Setup(repo => repo.GetAllInclude()).ReturnsAsync([col1]);
 
         // Act
         var result = await _collectionService.GetCollections();
@@ -42,7 +42,7 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
     {
         // Arrange
         var collection = ObjectMother.EmptyCollection();
-        _mocks.CollectionRepositoryMock.Setup(repo => repo.Get(It.IsAny<int>(), false)).ReturnsAsync(collection);
+        _mocks.CollectionRepositoryMock.Setup(repo => repo.GetInclude(It.IsAny<int>())).ReturnsAsync(collection);
 
         // Act
         var result = await _collectionService.GetCollection(It.IsAny<int>());
@@ -56,13 +56,13 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
     {
         // Arrange
         var collection = ObjectMother.EmptyCollection();
-        _mocks.CollectionRepositoryMock.Setup(repo => repo.Add(collection, true)).Returns(Task.FromResult(collection));
+        _mocks.CollectionRepositoryMock.Setup(repo => repo.Add(collection)).Returns(Task.FromResult(collection));
 
         // Act
         await _collectionService.AddCollection(collection);
 
         // Assert
-        _mocks.CollectionRepositoryMock.Verify(repo => repo.Add(collection, true), Times.Once);
+        _mocks.CollectionRepositoryMock.Verify(repo => repo.Add(collection), Times.Once);
     }
     
     [Fact(DisplayName = "UpdateCollection updates collection")]
@@ -85,7 +85,7 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
     {
         // Arrange
         var collection = ObjectMother.EmptyCollection();
-        _mocks.CollectionRepositoryMock.Setup(repo => repo.Get(It.IsAny<int>(), true)).ReturnsAsync(collection);
+        _mocks.CollectionRepositoryMock.Setup(repo => repo.Get(It.IsAny<int>(), false)).ReturnsAsync(collection);
         _mocks.CollectionRepositoryMock.Setup(repo => repo.SoftDelete(It.IsAny<int>())).Returns(Task.CompletedTask);
 
         // Act
@@ -101,13 +101,12 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
         // Arrange
         var rule = ObjectMother.SimpleRule();
         var collection = ObjectMother.EmptyCollection();
-        _mocks.CollectionRepositoryMock.Setup(repo => repo.Get(It.IsAny<int>(), false)).ReturnsAsync(collection);
+        _mocks.CollectionRepositoryMock.Setup(repo => repo.GetInclude(It.IsAny<int>())).ReturnsAsync(collection);
 
         // Act
         await _collectionService.AddRule(collection.Id, rule);
 
         // Assert
-        _mocks.RuleRepositoryMock.Verify(repo => repo.Add(rule, true), Times.Once);
         Assert.Contains(rule, collection.Rules);
     }
     
@@ -118,7 +117,7 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
         var rule = ObjectMother.SimpleRule();
         var collection = ObjectMother.EmptyCollection();
         collection.AddRule(rule);
-        _mocks.CollectionRepositoryMock.Setup(repo => repo.Get(It.IsAny<int>(), false)).ReturnsAsync(collection);
+        _mocks.CollectionRepositoryMock.Setup(repo => repo.GetInclude(It.IsAny<int>())).ReturnsAsync(collection);
 
         // Act
         await _collectionService.RemoveRule(collection.Id, rule.Id);
@@ -175,7 +174,7 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
     {
         // Arrange
         var collection = new Collection() { Owner = new User() { Id = 1 }};
-        _mocks.CollectionRepositoryMock.Setup(repo => repo.Get(It.IsAny<int>(), false)).ReturnsAsync(collection);
+        _mocks.CollectionRepositoryMock.Setup(repo => repo.GetInclude(It.IsAny<int>())).ReturnsAsync(collection);
 
         // Act
         var result = await _collectionService.GetOwner(collection.Id);
@@ -193,7 +192,7 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
         var collection = new CollectionBuilder()
             .WithRules(rule1, rule2)
             .Build();
-        _mocks.CollectionRepositoryMock.Setup(repo => repo.Get(It.IsAny<int>(), false)).ReturnsAsync(collection);
+        _mocks.CollectionRepositoryMock.Setup(repo => repo.GetInclude(It.IsAny<int>())).ReturnsAsync(collection);
         
         // Act
         var result = await _collectionService.GetCollectionRules(collection.Id);

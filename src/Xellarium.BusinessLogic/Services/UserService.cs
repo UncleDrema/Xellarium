@@ -51,14 +51,14 @@ public class UserService(IUnitOfWork unitOfWork, ILogger<UserService> logger) : 
 
     public async Task<IEnumerable<Collection>> GetUserCollections(int userId)
     {
-        var user = await unitOfWork.Users.Get(userId);
+        var user = await unitOfWork.Users.GetInclude(userId);
         if (user == null) throw new ArgumentException("User not found");
         return user.Collections;
     }
 
     public async Task<IEnumerable<Rule>> GetUserRules(int userId)
     {
-        var user = await unitOfWork.Users.Get(userId);
+        var user = await unitOfWork.Users.GetInclude(userId);
         if (user == null) throw new ArgumentException("User not found");
         return user.Rules;
     }
@@ -102,7 +102,7 @@ public class UserService(IUnitOfWork unitOfWork, ILogger<UserService> logger) : 
     {
         var user = await unitOfWork.Users.Get(userId);
         if (user == null) return null;
-        var collection = await unitOfWork.Collections.Get(collectionId);
+        var collection = await unitOfWork.Collections.GetInclude(collectionId);
         if (collection == null) return null;
         return collection.Owner.Id == user.Id ? collection : null;
     }
@@ -111,14 +111,14 @@ public class UserService(IUnitOfWork unitOfWork, ILogger<UserService> logger) : 
     {
         var user = await unitOfWork.Users.Get(userId);
         if (user == null) return null;
-        var rule = await unitOfWork.Rules.Get(ruleId);
+        var rule = await unitOfWork.Rules.GetInclude(ruleId);
         if (rule == null) return null;
         return rule.Owner.Id == user.Id ? rule : null;
     }
     
     public async Task AddCollection(int id, Collection collection)
     {
-        var user = await unitOfWork.Users.Get(id);
+        var user = await unitOfWork.Users.GetInclude(id);
         if (user == null) throw new ArgumentException("User not found");
         user.AddCollection(collection);
         await unitOfWork.Collections.Add(collection);

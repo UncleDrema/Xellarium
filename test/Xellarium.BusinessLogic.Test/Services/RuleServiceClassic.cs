@@ -17,9 +17,7 @@ public class RuleServiceClassicTests : IDisposable
     {
         _databaseFixture = new DatabaseFixture();
         
-        _ruleService = new RuleService(
-            _databaseFixture.RuleRepository,
-            _databaseFixture.CollectionRepository);
+        _ruleService = new RuleService(_databaseFixture.UnitOfWork);
     }
     
     [Fact(DisplayName = "GetRules returns all not deleted rules")]
@@ -27,7 +25,7 @@ public class RuleServiceClassicTests : IDisposable
     {
         // Arrange
         var neighborhood = ObjectMother.SimpleNeighborhood();
-        await _databaseFixture.NeighborhoodRepository.Add(neighborhood);
+        await _databaseFixture.UnitOfWork.Neighborhoods.Add(neighborhood);
         var rule1 = new RuleBuilder()
             .WithNeighborhood(neighborhood)
             .Build();
@@ -38,10 +36,10 @@ public class RuleServiceClassicTests : IDisposable
         var user = new UserBuilder()
             .WithRules(rule1, rule2)
             .Build();
-        await _databaseFixture.UserRepository.Add(user, false);
-        await _databaseFixture.RuleRepository.Add(rule1, false);
-        await _databaseFixture.RuleRepository.Add(rule2, true);
-        await _databaseFixture.Context.SaveChangesAsync();
+        await _databaseFixture.UnitOfWork.Users.Add(user);
+        await _databaseFixture.UnitOfWork.Rules.Add(rule1);
+        await _databaseFixture.UnitOfWork.Rules.Add(rule2);
+        await _databaseFixture.UnitOfWork.CompleteAsync();
         
         // Act
         var result = await _ruleService.GetRules();
@@ -55,11 +53,12 @@ public class RuleServiceClassicTests : IDisposable
     {
         // Arrange
         var neighborhood = ObjectMother.SimpleNeighborhood();
-        await _databaseFixture.NeighborhoodRepository.Add(neighborhood);
+        await _databaseFixture.UnitOfWork.Neighborhoods.Add(neighborhood);
         var rule = new RuleBuilder()
             .WithNeighborhood(neighborhood)
             .Build();
-        await _databaseFixture.RuleRepository.Add(rule);
+        await _databaseFixture.UnitOfWork.Rules.Add(rule);
+        await _databaseFixture.UnitOfWork.CompleteAsync();
         
         // Act
         var result = await _ruleService.GetRule(rule.Id);
@@ -72,7 +71,7 @@ public class RuleServiceClassicTests : IDisposable
     public async Task AddRule_AddsNewRule()
     {
         var neighborhood = ObjectMother.SimpleNeighborhood();
-        await _databaseFixture.NeighborhoodRepository.Add(neighborhood);
+        await _databaseFixture.UnitOfWork.Neighborhoods.Add(neighborhood);
         var rule = new RuleBuilder()
             .WithNeighborhood(neighborhood)
             .Build();
@@ -81,7 +80,7 @@ public class RuleServiceClassicTests : IDisposable
         await _ruleService.AddRule(rule);
         
         // Assert
-        Assert.Single((await _databaseFixture.RuleRepository.GetAll()));
+        Assert.Single((await _databaseFixture.UnitOfWork.Rules.GetAll()));
     }
 
     [AllureAfter("Clear database")]

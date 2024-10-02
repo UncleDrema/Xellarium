@@ -77,7 +77,7 @@ public class CollectionService(IUnitOfWork unitOfWork)
     
     public async Task SetPrivacy(int id, bool isPrivate)
     {
-        var collection = await unitOfWork.Collections.GetInclude(id);
+        var collection = await unitOfWork.Collections.Get(id);
         if (collection == null) throw new ArgumentException("Collection not found");
         collection.IsPrivate = isPrivate;
         await unitOfWork.Collections.Update(collection);

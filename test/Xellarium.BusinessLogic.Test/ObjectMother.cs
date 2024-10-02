@@ -19,24 +19,7 @@ public static class ObjectMother
             GenericRule = new GenericRule(),
             Name = "Simple Rule",
             Owner = null,
-            NeighborhoodId = 0,
-            Collections = new List<Collection>()
-        };
-    }
-    
-    public static Rule SimpleRule(int nId)
-    {
-        return new Rule
-        {
-            Id = 0,
-            IsDeleted = false,
-            DeletedAt = null,
-            CreatedAt = default,
-            UpdatedAt = default,
-            GenericRule = new GenericRule(),
-            Name = "Simple Rule",
-            Owner = null,
-            NeighborhoodId = nId,
+            Neighborhood = SimpleNeighborhood(),
             Collections = new List<Collection>()
         };
     }

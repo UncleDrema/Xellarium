@@ -11,7 +11,9 @@ public class RuleRepository(XellariumContext context, ILogger logger)
 {
     public async Task<IEnumerable<Rule>> GetAllInclude()
     {
-        return await _context.Rules.Include(r => r.Owner)
+        return await _context.Rules
+            .Where(e => !e.IsDeleted)
+            .Include(r => r.Owner)
             .Include(r => r.Collections)
             .Include(r => r.Neighborhood)
             .ToListAsync();
@@ -19,7 +21,9 @@ public class RuleRepository(XellariumContext context, ILogger logger)
     
     public async Task<IEnumerable<Rule>> GetAllByIdsInclude(IEnumerable<int> ids)
     {
-        return await _context.Rules.Include(r => r.Owner)
+        return await _context.Rules
+            .Where(e => !e.IsDeleted)
+            .Include(r => r.Owner)
             .Include(r => r.Collections)
             .Include(r => r.Neighborhood)
             .Where(r => ids.Contains(r.Id))
@@ -28,7 +32,9 @@ public class RuleRepository(XellariumContext context, ILogger logger)
 
     public async Task<Rule?> GetInclude(int id)
     {
-        return await _context.Rules.Include(r => r.Owner)
+        return await _context.Rules
+            .Where(e => !e.IsDeleted)
+            .Include(r => r.Owner)
             .Include(r => r.Collections)
             .Include(r => r.Neighborhood)
             .FirstOrDefaultAsync(r => r.Id == id);

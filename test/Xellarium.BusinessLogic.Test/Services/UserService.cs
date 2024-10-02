@@ -1,5 +1,6 @@
 ﻿using Allure.Xunit.Attributes;
 using Allure.Xunit.Attributes.Steps;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Xellarium.BusinessLogic.Models;
 using Xellarium.BusinessLogic.Services;
@@ -19,10 +20,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
     {
         _mocks = mocks;
         
-        _userService = new UserService(_mocks.UserRepositoryMock.Object,
-            _mocks.CollectionRepositoryMock.Object,
-            _mocks.RuleRepositoryMock.Object,
-            _mocks.NeighborhoodRepositoryMock.Object);
+        _userService = new UserService(_mocks.GetUnitOfWork(), new LoggerFactory().CreateLogger<UserService>());
     }
     
     [Fact(DisplayName = "GetUserById returns user when user exists")]
@@ -34,7 +32,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
             .WithId(userId)
             .Build();
         
-        _mocks.UserRepositoryMock.Setup(x => x.Get(userId, false)).ReturnsAsync(user);
+        _mocks.UserRepositoryMock.Setup(x => x.GetInclude(userId)).ReturnsAsync(user);
         
         // Act
         var result = await _userService.GetUser(userId);
@@ -66,7 +64,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
             .Build();
         user.Delete();
 
-        _mocks.UserRepositoryMock.Setup(x => x.Add(user, true));
+        _mocks.UserRepositoryMock.Setup(x => x.Add(user));
         
         // Act
         await _userService.AddUser(user);
@@ -85,13 +83,13 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
             .Build();
         
         _mocks.UserRepositoryMock.Setup(x => x.Exists(user.Id, false)).ReturnsAsync(false);
-        _mocks.UserRepositoryMock.Setup(x => x.Add(user, true));
+        _mocks.UserRepositoryMock.Setup(x => x.Add(user));
         
         // Act
         await _userService.AddUser(user);
         
         // Assert
-        _mocks.UserRepositoryMock.Verify(x => x.Add(user, true), Times.Once);
+        _mocks.UserRepositoryMock.Verify(x => x.Add(user), Times.Once);
     }
     
     [Fact(DisplayName = "AddUser throws exception when user exists")]
@@ -108,7 +106,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         await Assert.ThrowsAsync<ArgumentException>(() => _userService.AddUser(user));
         
         // Assert
-        _mocks.UserRepositoryMock.Verify(x => x.Add(user, true), Times.Never);
+        _mocks.UserRepositoryMock.Verify(x => x.Add(user), Times.Never);
     }
     
     [Fact(DisplayName = "UpdateUser updates user when user exists")]
@@ -155,7 +153,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
             .WithId(1)
             .Build();
         
-        _mocks.UserRepositoryMock.Setup(x => x.Get(userId, true)).ReturnsAsync(user);
+        _mocks.UserRepositoryMock.Setup(x => x.Get(userId, false)).ReturnsAsync(user);
         _mocks.UserRepositoryMock.Setup(x => x.SoftDelete(userId));
         
         // Act
@@ -190,7 +188,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
             .Build();
         user.Delete();
         
-        _mocks.UserRepositoryMock.Setup(x => x.Get(userId, true)).ReturnsAsync(user);
+        _mocks.UserRepositoryMock.Setup(x => x.Get(userId, false)).ReturnsAsync((User?)null);
         
         // Act
         await Assert.ThrowsAsync<ArgumentException>(() => _userService.DeleteUser(userId));
@@ -210,7 +208,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
             .WithCollections(ObjectMother.EmptyCollection())
             .Build();
         
-        _mocks.UserRepositoryMock.Setup(x => x.Get(userId, false)).ReturnsAsync(user);
+        _mocks.UserRepositoryMock.Setup(x => x.GetInclude(userId)).ReturnsAsync(user);
         
         // Act
         var result = await _userService.GetUserCollections(userId);
@@ -246,7 +244,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
             .WithRules(rule)
             .Build();
         
-        _mocks.UserRepositoryMock.Setup(x => x.Get(userId, false)).ReturnsAsync(user);
+        _mocks.UserRepositoryMock.Setup(x => x.GetInclude(userId)).ReturnsAsync(user);
         
         // Act
         var result = await _userService.GetUserRules(userId);
@@ -272,7 +270,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
             .WithRules(rule)
             .Build();
         
-        _mocks.UserRepositoryMock.Setup(x => x.Get(userId, false)).ReturnsAsync(user);
+        _mocks.UserRepositoryMock.Setup(x => x.GetInclude(userId)).ReturnsAsync(user);
         
         // Act
         var result = await _userService.GetUserRules(userId);
@@ -304,6 +302,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
             .Build();
         
         _mocks.UserRepositoryMock.Setup(x => x.Get(userId, false)).ReturnsAsync(user);
+        _mocks.UserRepositoryMock.Setup(x => x.GetInclude(userId)).ReturnsAsync(user);
         _mocks.UserRepositoryMock.Setup(x => x.Update(user));
         
         // Act
@@ -380,7 +379,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
         // Arrange
         var users = new List<User> { ObjectMother.SimpleUser(), ObjectMother.SimpleUser() };
         
-        _mocks.UserRepositoryMock.Setup(x => x.GetAll(false)).ReturnsAsync(users);
+        _mocks.UserRepositoryMock.Setup(x => x.GetAllInclude()).ReturnsAsync(users);
         
         // Act
         var result = await _userService.GetUsers();
@@ -393,7 +392,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
     public async Task GetUsers_WhenUsersNotExists_ShouldReturnEmptyList()
     {
         // Arrange
-        _mocks.UserRepositoryMock.Setup(x => x.GetAll(false)).ReturnsAsync(new List<User>());
+        _mocks.UserRepositoryMock.Setup(x => x.GetAllInclude()).ReturnsAsync(new List<User>());
         
         // Act
         var result = await _userService.GetUsers();
@@ -448,7 +447,7 @@ public class UserServiceTests : IDisposable, IClassFixture<RepositoryMocks>
             .Build();
         
         _mocks.UserRepositoryMock.Setup(x => x.Get(userId, false)).ReturnsAsync(user);
-        _mocks.CollectionRepositoryMock.Setup(x => x.Get(collectionId, false)).ReturnsAsync(collection);
+        _mocks.CollectionRepositoryMock.Setup(x => x.GetInclude(collectionId)).ReturnsAsync(collection);
         
         // Act
         var result = await _userService.GetCollection(userId, collectionId);

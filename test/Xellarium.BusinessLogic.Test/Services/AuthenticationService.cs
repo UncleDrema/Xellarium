@@ -1,5 +1,6 @@
 ﻿using Allure.Xunit.Attributes;
 using Allure.Xunit.Attributes.Steps;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Xellarium.BusinessLogic.Models;
 using Xellarium.BusinessLogic.Services;
@@ -19,10 +20,7 @@ public class AuthenticationServiceTests : IDisposable, IClassFixture<RepositoryM
     {
         _mocks = mocks;
         
-        var userService = new UserService(_mocks.UserRepositoryMock.Object,
-            _mocks.CollectionRepositoryMock.Object,
-            _mocks.RuleRepositoryMock.Object,
-            _mocks.NeighborhoodRepositoryMock.Object);
+        var userService = new UserService(_mocks.GetUnitOfWork(), new LoggerFactory().CreateLogger<UserService>());
         
         _authenticationService = new AuthenticationService(userService);
     }
@@ -65,13 +63,13 @@ public class AuthenticationServiceTests : IDisposable, IClassFixture<RepositoryM
         var name = "name";
         var password = "password";
         
-        _mocks.UserRepositoryMock.Setup(x => x.Add(It.IsAny<User>(), true));
+        _mocks.UserRepositoryMock.Setup(x => x.Add(It.IsAny<User>()));
         
         // Act
         await _authenticationService.RegisterUser(name, password);
         
         // Assert
-        _mocks.UserRepositoryMock.Verify(x => x.Add(It.IsAny<User>(), true), Times.Once);
+        _mocks.UserRepositoryMock.Verify(x => x.Add(It.IsAny<User>()), Times.Once);
     }
     
     [Fact(DisplayName = "AuthenticateUser when user not exists should return null")]

@@ -109,11 +109,8 @@ public class AuthenticationTests
     private (IUserService, IAuthenticationService) GetServices(XellariumContext context)
     {
         var logger = new LoggerFactory().CreateLogger<UnitOfWork>();
-        var userRepository = new UserRepository(context, logger);
-        var collectionRepository = new CollectionRepository(context, logger);
-        var ruleRepository = new RuleRepository(context, logger);
-        var neighborhoodRepository = new NeighborhoodRepository(context, logger);
-        var userService = new UserService(userRepository, collectionRepository, ruleRepository, neighborhoodRepository);
+        var unitOfWork = new UnitOfWork(context, logger);
+        var userService = new UserService(unitOfWork, new LoggerFactory().CreateLogger<UserService>());
         var authService = new AuthenticationService(userService);
         return (userService, authService);
     }

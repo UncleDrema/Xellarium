@@ -11,19 +11,25 @@ public class UserRepository(XellariumContext context, ILogger logger)
 {
     public async Task<User?> GetByName(string name)
     {
-        return await _context.Users.FirstOrDefaultAsync(u => u.Name == name);
+        return await _context.Users
+            .Where(e => !e.IsDeleted)
+            .FirstOrDefaultAsync(u => u.Name == name);
     }
     
     public async Task<IEnumerable<User>> GetAllInclude()
     {
-        return await _context.Users.Include(u => u.Collections)
+        return await _context.Users
+            .Where(e => !e.IsDeleted)
+            .Include(u => u.Collections)
             .Include(u => u.Rules)
             .ToListAsync();
     }
     
     public async Task<IEnumerable<User>> GetAllByIdsInclude(IEnumerable<int> ids)
     {
-        return await _context.Users.Include(u => u.Collections)
+        return await _context.Users
+            .Where(e => !e.IsDeleted)
+            .Include(u => u.Collections)
             .Include(u => u.Rules)
             .Where(u => ids.Contains(u.Id))
             .ToListAsync();
@@ -31,7 +37,9 @@ public class UserRepository(XellariumContext context, ILogger logger)
     
     public async Task<User?> GetInclude(int id)
     {
-        return await _context.Users.Include(u => u.Collections)
+        return await _context.Users
+            .Where(e => !e.IsDeleted)
+            .Include(u => u.Collections)
             .Include(u => u.Rules)
             .FirstOrDefaultAsync(u => u.Id == id);
     }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Xellarium.DataAccess.Models;
 using Xellarium.DataAccess.Repository;
 
@@ -8,10 +9,7 @@ namespace Xellarium.BusinessLogic.Test;
 public class DatabaseFixture : IDisposable
 {
     public XellariumContext Context { get; private set; }
-    public RuleRepository RuleRepository { get; private set; }
-    public UserRepository UserRepository { get; private set; }
-    public CollectionRepository CollectionRepository { get; private set; }
-    public NeighborhoodRepository NeighborhoodRepository { get; private set; }
+    public UnitOfWork UnitOfWork { get; private set; }
 
     public DatabaseFixture()
     {
@@ -28,11 +26,8 @@ public class DatabaseFixture : IDisposable
 
         Context = new XellariumContext(options);
         Context.Database.Migrate(); // Применяем миграции
-        
-        RuleRepository = new RuleRepository(Context);
-        UserRepository = new UserRepository(Context);
-        CollectionRepository = new CollectionRepository(Context);
-        NeighborhoodRepository = new NeighborhoodRepository(Context);
+
+        UnitOfWork = new UnitOfWork(Context, new LoggerFactory().CreateLogger<UnitOfWork>());
     }
 
     public void Dispose()
