@@ -6,7 +6,9 @@ public interface IApiLogic
 {
     Task<(ResultCode, AuthenticatedTokenDTO?)> Login(UserLoginDTO login);
     
-    Task<(ResultCode, AuthenticatedTokenDTO?)> Register(UserLoginDTO login);
+    Task<(ResultCode, RegisteredUserDTO?)> Register(UserRegisterDTO login);
+
+    Task<ResultCode> Verify2Fa(VerifyTwoFactorRequestDTO verifyRequest);
 
     Task<(ResultCode, UserDTO[]?)> GetAllUsers();
     

@@ -6,7 +6,6 @@ using Xellarium.BusinessLogic.Models;
 using Xellarium.BusinessLogic.Services;
 using Xellarium.DataAccess.Models;
 using Xellarium.DataAccess.Repository;
-using Xunit.Abstractions;
 
 namespace Xellarium.IntegrationTests;
 

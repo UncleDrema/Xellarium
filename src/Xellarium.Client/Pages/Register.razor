@@ -20,6 +20,20 @@
             <input @bind="loginModel.Password" type="password" class="form-control" id="txtPassword" />
         </div>
         <button type="button" @onclick="RegisterUser" class="btn btn-primary">Register</button>
+        @if (!string.IsNullOrEmpty(qrCodeUri))
+        {
+        <div>
+            <h3>Scan the QR code with your authenticator app:</h3>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?data=@qrCodeUri&size=150x150" />
+
+            <div class="mb-3">
+                <label for="otpCode" class="form-label">Enter the code from your app</label>
+                <input @bind="otpCode" type="text" class="form-control" id="otpCode" />
+            </div>
+
+            <button type="button" @onclick="VerifyOtpCode" class="btn btn-success">Verify</button>
+        </div>
+        }
         @if (!string.IsNullOrEmpty(errorMessage))
         { 
             <div class="alert alert-danger mt-3" role="alert">
@@ -30,18 +44,21 @@
 </div>
 
 @code {
-    private UserLoginDTO loginModel = new UserLoginDTO();
+    private UserRegisterDTO loginModel = new UserRegisterDTO();
     private string errorMessage = string.Empty;
+    private string qrCodeUri = string.Empty;
+    private string otpCode = string.Empty;
+    private RegisteredUserDTO? registeredUserDto;
  
     private async Task RegisterUser()
     {
-        var (success, tokenDto) = await _apiLogic.Register(loginModel);
+        var (success, registrationResultDto) = await _apiLogic.Register(loginModel);
         if (success == ResultCode.Ok)
         {
-            await _localStorage.SetItemAsStringAsync("isauthenticated", "true");
-            await _localStorage.SetItemAsStringAsync("token", tokenDto!.Token);
-            ((CustomAuthStateProvider)_authStateProvider).MarkUserAsAuthenticated("user");
-            _navigationManager.NavigateTo("/",true);
+            registeredUserDto = registrationResultDto;
+            qrCodeUri = registeredUserDto!.TwoFactorQrCodeUri;  // Сохранение QR-кода
+        
+            // Вместо перехода на другую страницу, сначала покажем QR-код для сканирования
         }
         else if (success == ResultCode.Error)
         {
@@ -50,6 +67,27 @@
         else
         {
             errorMessage = $"Unknown error occurred";
+        }
+    }
+    
+    private async Task VerifyOtpCode()
+    {
+        var success = await _apiLogic.Verify2Fa(new VerifyTwoFactorRequestDTO
+        {
+            UserName = loginModel.Username,
+            Code = otpCode
+        });
+    
+        if (success == ResultCode.Ok)
+        {
+            await _localStorage.SetItemAsStringAsync("isauthenticated", "true");
+            await _localStorage.SetItemAsStringAsync("token", registeredUserDto!.Token);
+            ((CustomAuthStateProvider)_authStateProvider).MarkUserAsAuthenticated("user");
+            _navigationManager.NavigateTo("/", true);
+        }
+        else
+        {
+            errorMessage = "Invalid two-factor authentication code.";
         }
     }
 }

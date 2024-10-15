@@ -13,6 +13,8 @@ public class UserRepository(XellariumContext context, ILogger logger)
     {
         return await _context.Users
             .Where(e => !e.IsDeleted)
+            .Include(u => u.Collections)
+            .Include(u => u.Rules)
             .FirstOrDefaultAsync(u => u.Name == name);
     }
     

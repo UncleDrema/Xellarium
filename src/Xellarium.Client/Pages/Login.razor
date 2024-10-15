@@ -18,6 +18,12 @@
             <label for="txtPassword" class="form-label">Password</label>
             <input @bind="loginModel.Password" type="password" class="form-control" id="txtPassword" />
         </div>
+
+        <div class="mb-3">
+            <label for="txtTwoFactorCode" class="form-label">Two-Factor Code</label>
+            <input @bind="loginModel.TwoFactorCode" type="text" class="form-control" id="txtTwoFactorCode" />
+        </div>  
+        
         <button type="button" @onclick="UserLogin" class="btn btn-primary">Login</button>
         <button type="button" @onclick="Register" class="btn btn-link">Register</button>
         @if (!string.IsNullOrEmpty(errorMessage))
@@ -44,11 +50,11 @@
         }
         else if (success == ResultCode.Error)
         {
-            errorMessage = $"User with username {loginModel.Username} already exists";
+            errorMessage = $"Unknown error occured";
         }
         else if (success == ResultCode.Unauthorized)
         {
-            errorMessage = $"Invalid username or password";
+            errorMessage = $"Invalid username, password or 2FA code";
         }
     }
     

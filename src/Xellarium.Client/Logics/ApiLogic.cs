@@ -29,6 +29,7 @@ public class ApiLogic : IApiLogic
         }
         else
         {
+            Console.WriteLine($"POST Error {response.StatusCode}: {await response.Content.ReadAsStringAsync()}");
             return ResultCode.Error;
         }
     }
@@ -46,6 +47,27 @@ public class ApiLogic : IApiLogic
         }
         else
         {
+            Console.WriteLine($"DELETE Error {response.StatusCode}: {await response.Content.ReadAsStringAsync()}");
+            return ResultCode.Error;
+        }
+    }
+    
+    private async Task<ResultCode> PostAsync<TBody>(string uri, TBody body)
+    {
+        var json = JsonSerializer.Serialize(body);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        var response = await Client().PostAsync(uri, content);
+        if (response.IsSuccessStatusCode)
+        {
+            return ResultCode.Ok;
+        }
+        else if (response.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            return ResultCode.Unauthorized;
+        }
+        else
+        {
+            Console.WriteLine($"POST Error {response.StatusCode}: {await response.Content.ReadAsStringAsync()}");
             return ResultCode.Error;
         }
     }
@@ -93,9 +115,14 @@ public class ApiLogic : IApiLogic
         return await PostAsync<UserLoginDTO, AuthenticatedTokenDTO>("api/v2/authentication/login", login);
     }
 
-    public async Task<(ResultCode, AuthenticatedTokenDTO?)> Register(UserLoginDTO login)
+    public async Task<(ResultCode, RegisteredUserDTO?)> Register(UserRegisterDTO login)
     {
-        return await PostAsync<UserLoginDTO, AuthenticatedTokenDTO>("api/v2/authentication/register", login);
+        return await PostAsync<UserRegisterDTO, RegisteredUserDTO>("api/v2/authentication/register", login);
+    }
+
+    public async Task<ResultCode> Verify2Fa(VerifyTwoFactorRequestDTO verifyRequest)
+    {
+        return await PostAsync("api/v2/authentication/verify-2fa", verifyRequest);
     }
 
     public async Task<(ResultCode, UserDTO[]?)> GetAllUsers()

@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
+using OtpNet;
 using Xellarium.Authentication;
 using Xellarium.BusinessLogic.Models;
 using Xellarium.BusinessLogic.Services;
@@ -29,7 +30,7 @@ public class AuthenticationController(IAuthenticationService _service, IMapper m
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<AuthenticatedTokenDTO>> Register(UserLoginDTO userLoginDto)
+    public async Task<ActionResult<RegisteredUserDTO>> Register(UserRegisterDTO userLoginDto)
     {
         var (name, password) = (userLoginDto.Username, userLoginDto.Password);
         if (await _userService.UserExists(name))
@@ -38,7 +39,39 @@ public class AuthenticationController(IAuthenticationService _service, IMapper m
             return Conflict();
         }
         
-        var user = await _service.RegisterUser(name, password);
+        var user = await _service.RegisterUser(name, password, GenerateTwoFactorSecret());
+        
+        var expiration = TimeSpan.FromSeconds(jwtConfig.ExpirationSeconds);
+        var token = CreateAccessToken(user, expiration);
+        
+        return Ok(new RegisteredUserDTO()
+        {
+            Token = token,
+            ExpirationSeconds = (int) expiration.TotalSeconds,
+            Type = Jwt.AuthType,
+            TwoFactorQrCodeUri = GenerateQrCodeUri(name, user.TwoFactorSecret!)
+        });
+    }
+    
+    [HttpPost("login")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<AuthenticatedTokenDTO>> Login(UserLoginDTO userLoginDto)
+    {
+        var (name, password, twoFactorCode) = (userLoginDto.Username, userLoginDto.Password, userLoginDto.TwoFactorCode);
+        var user = await _service.AuthenticateUser(name, password);
+        if (user == null)
+        {
+            return Unauthorized("Wrong password");
+        }
+
+        if (user.TwoFactorSecret != null &&
+            (twoFactorCode == null ||
+            !VerifyTwoFactorCode(twoFactorCode, user.TwoFactorSecret)))
+        {
+            return Unauthorized("Wrong two factor code");
+        }
         
         var expiration = TimeSpan.FromSeconds(jwtConfig.ExpirationSeconds);
         var token = CreateAccessToken(user, expiration);
@@ -50,29 +83,40 @@ public class AuthenticationController(IAuthenticationService _service, IMapper m
             Type = Jwt.AuthType
         });
     }
-    
-    [HttpPost("login")]
+
+    [HttpPost("verify-2fa")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> VerifyTwoFactorCode(VerifyTwoFactorRequestDTO verifyRequest)
+    {
+        var user = await _userService.GetUserByName(verifyRequest.UserName);
+        if (user is null)
+        {
+            return NotFound();
+        }
+
+        if (user.TwoFactorSecret is null || !VerifyTwoFactorCode(verifyRequest.Code, user.TwoFactorSecret))
+        {
+            return Unauthorized("Invalid two-factor authentication code.");
+        }
+
+        return Ok("Two-factor authentication successful");
+    }
+
+    [HttpGet("is-token-valid")]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<AuthenticatedTokenDTO>> Login(UserLoginDTO userLoginDto)
+    public async Task<IActionResult> CheckTokenValid()
     {
-        var (name, password) = (userLoginDto.Username, userLoginDto.Password);
-        var user = await _service.AuthenticateUser(name, password);
-        if (user == null)
+        if (!HttpContext.TryGetAuthenticatedUser(out var authUser))
         {
             return Unauthorized();
         }
-        
-        var expiration = TimeSpan.FromSeconds(jwtConfig.ExpirationSeconds);
-        var token = CreateAccessToken(user, expiration);
-        
-        return Ok(new AuthenticatedTokenDTO()
-        {
-            Token = token,
-            ExpirationSeconds = (int) expiration.TotalSeconds,
-            Type = Jwt.AuthType
-        });
+
+        return Ok($"Authenticated as {authUser!.Name}");
     }
 
     private string CreateAccessToken(User user, TimeSpan expiration)
@@ -99,5 +143,22 @@ public class AuthenticationController(IAuthenticationService _service, IMapper m
         
         var rawToken = new JwtSecurityTokenHandler().WriteToken(token);
         return rawToken;
+    }
+    
+    private string GenerateTwoFactorSecret()
+    {
+        var key = KeyGeneration.GenerateRandomKey(20);  // Генерация случайного ключа
+        return Base32Encoding.ToString(key);            // Кодирование ключа в формат Base32
+    }
+    
+    private bool VerifyTwoFactorCode(string code, string secret)
+    {
+        var totp = new Totp(Base32Encoding.ToBytes(secret));  // Инициализация с использованием секретного ключа
+        return totp.VerifyTotp(code, out long timeStepMatched, new VerificationWindow(2, 2)); // Проверка с небольшим допуском
+    }
+    
+    private string GenerateQrCodeUri(string username, string secret)
+    {
+        return $"otpauth://totp/{username}?secret={secret}&issuer=Xellarium";
     }
 }

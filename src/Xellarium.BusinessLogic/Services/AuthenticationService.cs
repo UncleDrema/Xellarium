@@ -4,12 +4,12 @@ namespace Xellarium.BusinessLogic.Services;
 
 public class AuthenticationService(IUserService userService) : IAuthenticationService
 {
-    public async Task<User> RegisterUser(string name, string password)
+    public async Task<User> RegisterUser(string name, string password, string? twoFactorSecret)
     {
         if (await userService.UserExists(name)) throw new ArgumentException("User already exists");
         if (string.IsNullOrWhiteSpace(password)) throw new ArgumentException("Password is empty");
         
-        var user = new User {Name = name, PasswordHash = HashPassword(password)};
+        var user = new User {Name = name, PasswordHash = HashPassword(password), TwoFactorSecret = twoFactorSecret};
         await userService.AddUser(user);
         return user;
     }

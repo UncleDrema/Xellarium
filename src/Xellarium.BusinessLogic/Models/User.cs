@@ -9,6 +9,7 @@ public class User : BaseModel
 {
     public string Name { get; set; } = "";
     public string PasswordHash { get; set; } = "";
+    public string? TwoFactorSecret { get; set; } = "";
     public UserRole Role { get; set; } = UserRole.User;
     public int WarningsCount { get; set; } = 0;
     public bool IsBlocked { get; set; } = false;
