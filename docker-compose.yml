@@ -9,7 +9,7 @@ services:
       - POSTGRES_PASSWORD=dremakorol
       - PGDATA=/var/lib/postgresql/data/
     volumes:
-      - C:\Users\missl\Education\web\docker\database\data:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
     ports:
       - "5432:5432"
         
@@ -85,3 +85,4 @@ services:
 
 volumes:
   pgdata-test:
+  pgdata:
