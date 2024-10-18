@@ -28,6 +28,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-build-
 
+      - name: Set up Docker Compose
+        run: sudo apt-get update && sudo apt-get install docker-compose -y
+
       - name: Build containers
         run: |
           docker-compose -f docker-compose.yml build --cache-from=type=local,src=/tmp/.buildx-cache
