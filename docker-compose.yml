@@ -1,0 +1,87 @@
+﻿version: '3.8'
+
+services:
+  xellarium-db:
+    container_name: xellarium-db
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=uncledrema
+      - POSTGRES_PASSWORD=dremakorol
+      - PGDATA=/var/lib/postgresql/data/
+    volumes:
+      - C:\Users\missl\Education\web\docker\database\data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+        
+  api:
+    container_name: api
+    image: xellarium.server
+    build:
+      context: ./src/
+      dockerfile: Dockerfile
+    environment:
+      Databases__Postgres__ConnectionString: "Host=xellarium-db;Port=5432;Database=xellarium;Username=uncledrema;Password=dremakorol"
+    depends_on:
+      - xellarium-db
+    ports:
+      - "5000:8080"
+  
+  xellarium-test-db:
+    container_name: xellarium-test-db
+    image: postgres:15
+    environment:
+      POSTGRES_USER: testuser
+      POSTGRES_PASSWORD: testpassword
+      POSTGRES_DB: testdb
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata-test:/var/lib/postgresql/data
+
+  test-api:
+    container_name: test-api
+    image: xellarium.server
+    build:
+      context: ./src/
+      dockerfile: Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Testing
+      Databases__Postgres__ConnectionString: "Host=xellarium-test-db;Port=5432;Database=testdb;Username=testuser;Password=testpassword"
+    depends_on:
+      - xellarium-test-db
+    ports:
+      - "5001:8080"
+
+  unit-tests:
+    image: xellarium-tests
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: --filter "(TestCategory = Unit)" --property:WarningLevel=0
+    environment:
+      ConnectionStrings__Postgres: "Host=xellarium-test-db;Database=testdb;Username=testuser;Password=testpassword"
+    depends_on:
+      - xellarium-test-db
+
+  integration-tests:
+     image: xellarium-tests
+     build:
+       context: .
+       dockerfile: Dockerfile
+     command: --filter "(TestCategory = Integration)" --property:WarningLevel=0
+     depends_on:
+       - xellarium-test-db
+
+  e2e-tests:
+     image: xellarium-tests
+     build:
+       context: .
+       dockerfile: Dockerfile
+     command: --filter "(TestCategory = EndToEnd)" --property:WarningLevel=0
+     environment:
+       ServerAddress: "http://api:8080/"
+     depends_on:
+       - test-api
+
+volumes:
+  pgdata-test:

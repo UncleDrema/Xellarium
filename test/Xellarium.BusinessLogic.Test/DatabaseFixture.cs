@@ -16,6 +16,7 @@ public class DatabaseFixture : IDisposable
         var configuration = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.Test.json")
+            .AddEnvironmentVariables()
             .Build();
         
         var connectionString = configuration.GetConnectionString("Postgres");

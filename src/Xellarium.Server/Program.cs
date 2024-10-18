@@ -64,6 +64,7 @@ public static class Program
     public static async Task RunApp(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+        builder.Configuration.AddEnvironmentVariables();
         
         ConfigureBusinessLogicConfiguration(builder);
         ConfigureJwtAuthorizationConfiguration(builder);
