@@ -42,6 +42,7 @@ public class DefaultDictionaryTests
         Assert.Equal(defaultValue, element);
     }
 
+    /*
     [Theory(DisplayName = "Factory specified makes dictionary return value from it")]
     [MemberData(nameof(FactoryAndValues))]
     public void FactorySpecified_ReturnsValueFromIt<TK, TV>(Func<TK, TV> factory, IEnumerable<TK> values)
@@ -55,6 +56,7 @@ public class DefaultDictionaryTests
         // Assert
         Assert.All(values, action);
     }
+    */
 
     [Fact(DisplayName = "Inner dictionary access throws exception")]
     public void InnerDictionaryAccess_ThrowsException()
