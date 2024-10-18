@@ -79,7 +79,7 @@ services:
        dockerfile: Dockerfile
      command: --filter "(TestCategory = EndToEnd)" --property:WarningLevel=0
      environment:
-       ServerAddress: "http://api:8080/"
+       ServerAddress: "http://test-api:8080/"
      depends_on:
        - test-api
 
