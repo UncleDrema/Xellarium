@@ -1,0 +1,50 @@
+﻿name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: testdb
+        options: >-
+          --health-cmd "pg_isready -U testuser"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5433:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Docker Compose
+        run: sudo apt-get update && sudo apt-get install docker-compose -y
+
+      - name: Build containers
+        run: docker-compose -f docker-compose.yml build
+
+      - name: Run unit tests
+        run: docker-compose -f docker-compose.yml up -d xellarium-test-db && docker-compose run --rm unit-tests
+
+      - name: Run integration tests
+        run: docker-compose -f docker-compose.yml up -d xellarium-test-db && docker-compose run --rm integration-tests
+
+      - name: Run E2E tests
+        run: docker-compose -f docker-compose.yml up -d test-api && docker-compose run --rm e2e-tests
+
+      - name: Clean up
+        run: docker-compose down -v
