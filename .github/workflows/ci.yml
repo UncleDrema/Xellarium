@@ -26,7 +26,7 @@ jobs:
         run: docker-compose run --rm unit-tests
 
       - name: Run integration tests
-        run:docker-compose run --rm integration-tests
+        run: docker-compose run --rm integration-tests
 
       - name: Run E2E tests
         run: docker-compose run --rm e2e-tests
