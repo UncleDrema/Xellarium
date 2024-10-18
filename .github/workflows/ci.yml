@@ -7,7 +7,6 @@ on:
   pull_request:
     branches:
       - master
-  workflow_dispatch:
 
 jobs:
   build:
@@ -15,56 +14,22 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up Docker Compose
         run: sudo apt-get update && sudo apt-get install docker-compose -y
 
       - name: Build containers
-        run: |
-          docker-compose -f docker-compose.yml build
-
-  unit_tests:
-    runs-on: ubuntu-latest
-    needs: build  # Ждём завершения job build
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+        run: docker-compose -f docker-compose.yml build
 
       - name: Run unit tests
-        run: docker-compose -f docker-compose.yml up -d xellarium-test-db && docker-compose run --rm unit-tests
-
-      - name: Clean up after unit tests
-        run: docker-compose down -v
-        if: always()  # Запускается всегда
-
-  integration_tests:
-    runs-on: ubuntu-latest
-    needs: unit_tests  # Ждём завершения job unit_tests
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+        run: docker-compose run --rm unit-tests
 
       - name: Run integration tests
-        run: docker-compose -f docker-compose.yml up -d xellarium-test-db && docker-compose run --rm integration-tests
-
-      - name: Clean up after integration tests
-        run: docker-compose down -v
-        if: always()  # Запускается всегда
-
-  e2e_tests:
-    runs-on: ubuntu-latest
-    needs: integration_tests  # Ждём завершения job integration_tests
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+        run:docker-compose run --rm integration-tests
 
       - name: Run E2E tests
-        run: docker-compose -f docker-compose.yml up -d test-api && docker-compose run --rm e2e-tests
+        run: docker-compose run --rm e2e-tests
 
-      - name: Clean up after E2E tests
+      - name: Clean up
         run: docker-compose down -v
-        if: always()  # Запускается всегда
