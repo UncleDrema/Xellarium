@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Xellarium.BusinessLogic.Models;
 using Xellarium.DataAccess.Models;
 
@@ -10,12 +11,19 @@ public class TestDatabaseBuilder
 
     public TestDatabaseBuilder()
     {
+        var configuration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.Test.json")
+            .AddEnvironmentVariables()
+            .Build();
+        var connectionString = configuration.GetConnectionString("Postgres");
+        
         var options = new DbContextOptionsBuilder<XellariumContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .UseNpgsql(connectionString)
             .Options;
+        
         _context = new XellariumContext(options);
-        _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-        _context.Database.EnsureCreatedAsync();
+        _context.Database.Migrate();
     }
     
     public TestDatabaseBuilder WithUsers(IEnumerable<User> users)

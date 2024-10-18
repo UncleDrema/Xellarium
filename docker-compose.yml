@@ -69,6 +69,8 @@ services:
        context: .
        dockerfile: Dockerfile
      command: --filter "(TestCategory = Integration)" --property:WarningLevel=0
+     environment:
+       ConnectionStrings__Postgres: "Host=xellarium-test-db;Database=testdb;Username=testuser;Password=testpassword"
      depends_on:
        - xellarium-test-db
 

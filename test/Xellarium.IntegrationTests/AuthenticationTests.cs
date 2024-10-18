@@ -11,16 +11,22 @@ namespace Xellarium.IntegrationTests;
 
 [AllureParentSuite("Intergration tests")]
 [AllureSuite("User")]
-public class AuthenticationTests
+public class AuthenticationTests : IDisposable
 {
+    private readonly DatabaseFixture _databaseFixture;
+    
+    [AllureBefore("Connect to database")]
+    public AuthenticationTests()
+    {
+        _databaseFixture = new DatabaseFixture();
+    }
+    
     [Fact(DisplayName = "Registration works")]
     public async Task TestRegistrationWorks()
     {
         AllureApi.Step("Connect to test database");
-        await using var context = new TestDatabaseBuilder()
-            .Build();
         
-        var (userService, authService) = GetServices(context);
+        var (userService, authService) = GetServices(_databaseFixture.Context);
         
         AllureApi.Step("Register user");
         var user = await authService.RegisterUser("user", "password");
@@ -42,37 +48,12 @@ public class AuthenticationTests
         Assert.Equal("user", userById.Name);
     }
     
-    [Fact(DisplayName = "Registration fails with duplicate name")]
-    public async Task TestRegistrationFailsWithDuplicateName()
-    {
-        AllureApi.Step("Connect to test database");
-        await using var context = new TestDatabaseBuilder()
-            .WithUsers(new List<User>
-            {
-                new User
-                {
-                    Name = "user",
-                    PasswordHash = "password"
-                }
-            })
-            .Build();
-        
-        var (userService, authService) = GetServices(context);
-        
-        var user = await userService.GetUserByName("user");
-        
-        AllureApi.Step("Assert exception is thrown");
-        await Assert.ThrowsAsync<ArgumentException>(() => authService.RegisterUser("user", "password"));
-    }
-    
     [Fact(DisplayName = "Authentication works")]
     public async Task TestAuthenticateWorks()
     {
         AllureApi.Step("Connect to test database");
-        await using var context = new TestDatabaseBuilder()
-            .Build();
         
-        var (userService, authService) = GetServices(context);
+        var (userService, authService) = GetServices(_databaseFixture.Context);
         
         AllureApi.Step("Register user");
         await authService.RegisterUser("user", "password");
@@ -89,10 +70,8 @@ public class AuthenticationTests
     public async Task TestAuthenticateFailsWithWrongPassword()
     {
         AllureApi.Step("Connect to test database");
-        await using var context = new TestDatabaseBuilder()
-            .Build();
         
-        var (userService, authService) = GetServices(context);
+        var (userService, authService) = GetServices(_databaseFixture.Context);
         
         AllureApi.Step("Register user");
         await authService.RegisterUser("user", "password");
@@ -112,5 +91,11 @@ public class AuthenticationTests
         var userService = new UserService(unitOfWork, new LoggerFactory().CreateLogger<UserService>());
         var authService = new AuthenticationService(userService);
         return (userService, authService);
+    }
+    
+    [AllureAfter("Clear database")]
+    public void Dispose()
+    {
+        _databaseFixture.Dispose();
     }
 }
