@@ -18,5 +18,4 @@ RUN dotnet publish "Xellarium.Server.csproj" -c $BUILD_CONFIGURATION -o /app/pub
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-RUN ls -alh
 ENTRYPOINT ["dotnet", "Xellarium.Server.dll"]
