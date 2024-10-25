@@ -22,20 +22,14 @@
 <img src="images/integration.png">
 
 3. Для тестов инициализируется отдельный инстанс хранилища
+4. Инстанс хранилища поднимается новый
 
 <img src="images/test_storage.png">
 
-4. Инстанс хранилища поднимается новый
-
-<img src="images/new_storage.png">
-
 5. Порядок запуска тестов unit -> intergration -> e2e
-
-<img src="images/tests_order.png">
-
 6. Если один из этапов свалился, последующие не запускаются
 
-<img src="images/no_run_after_fail.png">
+<img src="images/tests_order.png">
 
 7. Откат хранилища на состояние до запуска тестов
 

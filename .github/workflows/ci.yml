@@ -18,6 +18,14 @@ jobs:
 
       - name: Set up Docker Compose
         run: sudo apt-get update && sudo apt-get install docker-compose -y
+        
+      - name: Install Allure
+        run: |
+          sudo apt-get install -y default-jre  # Устанавливаем Java, необходимую для Allure
+          sudo mkdir -p /opt/allure  # Создаём директорию для Allure
+          curl -sL https://github.com/allure-framework/allure2/releases/download/2.20.0/allure-2.20.0.tgz -o allure.tgz
+          sudo tar -xzvf allure.tgz -C /opt/allure
+          sudo ln -s /opt/allure/allure-2.20.0/bin/allure /usr/bin/allure
 
       - name: Build containers
         run: docker-compose -f docker-compose.yml build
@@ -30,6 +38,28 @@ jobs:
 
       - name: Run E2E tests
         run: docker-compose run --rm e2e-tests
+
+      - name: Set permissions for allure-results
+        run: sudo chmod -R 755 src/allure-results
+
+      - name: Copy history
+        run: sudo cp -R ./history ./src/allure-results/
+
+      - name: Generate Allure report
+        run: |
+          allure generate ./src/allure-results -o ./allure-report
+
+      - name: Upload Allure report as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: allure-report
+          path: ./allure-report
+
+      - name: Upload Allure results as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: allure-results
+          path: ./src/allure-results
 
       - name: Clean up
         run: docker-compose down -v
