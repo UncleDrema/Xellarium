@@ -46,26 +46,26 @@ jobs:
         run: ls -la ./test
         
       - name: Set permissions for allure-results
-        run: sudo chmod -R 755 test/allure-results
+        run: sudo chmod -R 755 allure-results
 
       - name: Copy history
-        run: sudo cp -R ./history ./test/allure-results/
+        run: sudo cp -R ./history ./allure-results/
 
       - name: Generate Allure report
         run: |
-          allure generate ./test/allure-results -o ./allure-report
+          allure generate ./allure-results -o ./allure-report
 
       - name: Upload Allure report as artifact
         uses: actions/upload-artifact@v3
         with:
           name: allure-report
-          path: ./test/allure-report
+          path: ./allure-report
 
       - name: Upload Allure results as artifact
         uses: actions/upload-artifact@v3
         with:
           name: allure-results
-          path: ./test/allure-results
+          path: ./allure-results
 
       - name: Clean up
         run: docker-compose down -v
