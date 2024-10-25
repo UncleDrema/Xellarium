@@ -22,7 +22,7 @@ public sealed class AuthorizationStepDefinitions(IReqnrollOutputHelper output, I
     [Given(@"a user exists with username (.*), password (.*) and FA secret (.*)")]
     public void GivenAUserExistsWithUsernameAdminPasswordAdminAndFaSecretNull(string username, string password, string? secret)
     {
-        if (Environment.GetEnvironmentVariable("TEST_STATUS") == "failed")
+        if (Environment.GetEnvironmentVariable("TESTS_STATUS") == "failed")
             unitTestRuntimeProvider.TestIgnore("Skipped because previous tests failed");
         
         output.WriteLine($"Given user {username} with password {password} and secret {secret} (is null: {secret is null})");
