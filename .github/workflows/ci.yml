@@ -48,9 +48,6 @@ jobs:
       - name: Set permissions for allure-results
         run: sudo chmod -R 755 allure-results
 
-      - name: Copy history
-        run: sudo cp -R ./history ./allure-results/
-
       - name: Generate Allure report
         run: |
           allure generate ./allure-results -o ./allure-report
