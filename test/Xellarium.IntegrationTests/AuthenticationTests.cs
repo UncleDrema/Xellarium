@@ -21,9 +21,10 @@ public class AuthenticationTests : IDisposable
         _databaseFixture = new DatabaseFixture();
     }
     
-    [Fact(DisplayName = "Registration works")]
+    [SkippableFact(DisplayName = "Registration works")]
     public async Task TestRegistrationWorks()
     {
+        Skip.If(Environment.GetEnvironmentVariable("TEST_STATUS") == "failed");
         AllureApi.Step("Connect to test database");
         
         var (userService, authService) = GetServices(_databaseFixture.Context);
@@ -48,9 +49,10 @@ public class AuthenticationTests : IDisposable
         Assert.Equal("user", userById.Name);
     }
     
-    [Fact(DisplayName = "Authentication works")]
+    [SkippableFact(DisplayName = "Authentication works")]
     public async Task TestAuthenticateWorks()
     {
+        Skip.If(Environment.GetEnvironmentVariable("TEST_STATUS") == "failed");
         AllureApi.Step("Connect to test database");
         
         var (userService, authService) = GetServices(_databaseFixture.Context);
@@ -66,9 +68,10 @@ public class AuthenticationTests : IDisposable
         Assert.Equal("user", user.Name);
     }
     
-    [Fact(DisplayName = "Authentication fails with wrong password")]
+    [SkippableFact(DisplayName = "Authentication fails with wrong password")]
     public async Task TestAuthenticateFailsWithWrongPassword()
     {
+        Skip.If(Environment.GetEnvironmentVariable("TEST_STATUS") == "failed");
         AllureApi.Step("Connect to test database");
         
         var (userService, authService) = GetServices(_databaseFixture.Context);

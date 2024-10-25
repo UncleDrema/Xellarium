@@ -24,6 +24,7 @@ public class CollectionServiceTests : IDisposable, IClassFixture<RepositoryMocks
     [Fact(DisplayName = "GetCollections returns all not deleted collections")]
     public async Task GetCollections_ReturnsAllNotDeletedCollections()
     {
+        throw new Exception("Test is broken");
         // Arrange
         var col1 = ObjectMother.EmptyCollection();
         var col2 = ObjectMother.EmptyCollection();

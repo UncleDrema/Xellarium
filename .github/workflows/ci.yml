@@ -31,13 +31,30 @@ jobs:
         run: docker-compose -f docker-compose.yml build
 
       - name: Run unit tests
-        run: docker-compose run --rm unit-tests
+        run: |
+         docker-compose run --rm unit-tests
+         if grep -q '"status": "failed"' ./allure-results/*.json; then
+           echo "TESTS_STATUS=failed" >> $GITHUB_ENV
+         else
+           echo "TESTS_STATUS=success" >> $GITHUB_ENV
+         fi
 
       - name: Run integration tests
-        run: docker-compose run --rm integration-tests
+        run: |
+          docker-compose run --rm -e TESTS_STATUS=${{ env.TESTS_STATUS }} integration-tests
+          if grep -q '"status": "failed"' ./allure-results/*.json; then
+            echo "TESTS_STATUS=failed" >> $GITHUB_ENV
+          else
+            echo "TESTS_STATUS=success" >> $GITHUB_ENV
+          fi
+        env:
+          TESTS_STATUS: ${{ env.TESTS_STATUS }}
 
       - name: Run E2E tests
-        run: docker-compose run --rm e2e-tests
+        run: |
+          docker-compose run --rm -e TESTS_STATUS=${{ env.TESTS_STATUS }} e2e-tests
+        env:
+          TESTS_STATUS: ${{ env.TESTS_STATUS }}
 
       - name: Print all folders
         run: ls -la .

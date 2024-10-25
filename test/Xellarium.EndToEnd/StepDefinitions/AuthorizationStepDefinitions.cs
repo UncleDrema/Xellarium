@@ -1,5 +1,7 @@
-﻿using OtpNet;
+﻿using System;
+using OtpNet;
 using Reqnroll;
+using Reqnroll.UnitTestProvider;
 using Xellarium.BusinessLogic.Models;
 using Xellarium.BusinessLogic.Repository;
 using Xellarium.BusinessLogic.Services;
@@ -10,7 +12,8 @@ using Xunit;
 namespace Xellarium.EndToEnd.StepDefinitions;
 
 [Binding]
-public sealed class AuthorizationStepDefinitions(IReqnrollOutputHelper output, IApiLogic logic, IAuthenticationService authService)
+public sealed class AuthorizationStepDefinitions(IReqnrollOutputHelper output, IApiLogic logic,
+    IUnitTestRuntimeProvider unitTestRuntimeProvider, IAuthenticationService authService)
 {
     private string? _loginUsername;
     private string? _loginPassword;
@@ -19,6 +22,9 @@ public sealed class AuthorizationStepDefinitions(IReqnrollOutputHelper output, I
     [Given(@"a user exists with username (.*), password (.*) and FA secret (.*)")]
     public void GivenAUserExistsWithUsernameAdminPasswordAdminAndFaSecretNull(string username, string password, string? secret)
     {
+        if (Environment.GetEnvironmentVariable("TEST_STATUS") == "failed")
+            unitTestRuntimeProvider.TestIgnore("Skipped because previous tests failed");
+        
         output.WriteLine($"Given user {username} with password {password} and secret {secret} (is null: {secret is null})");
         authService.RegisterUser(username, password, secret);
     }
