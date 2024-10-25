@@ -52,7 +52,8 @@ public class AuthenticationTests : IDisposable
     [SkippableFact(DisplayName = "Authentication works")]
     public async Task TestAuthenticateWorks()
     {
-        Skip.If(Environment.GetEnvironmentVariable("TEST_STATUS") == "failed");
+        if (Environment.GetEnvironmentVariable("TEST_STATUS") == "failed")
+            throw new SkipException("Xunit 3.0");
         AllureApi.Step("Connect to test database");
         
         var (userService, authService) = GetServices(_databaseFixture.Context);

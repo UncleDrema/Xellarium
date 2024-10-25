@@ -43,6 +43,7 @@ jobs:
       - name: Run integration tests
         if: success() || failure()
         run: |
+          echo ${{ env.TESTS_STATUS }}
           docker-compose run --rm -e TESTS_STATUS=${{ env.TESTS_STATUS }} integration-tests
           if grep -q '"status": "failed"' ./allure-results/*.json; then
             echo "TESTS_STATUS=failed" >> $GITHUB_ENV
@@ -55,6 +56,7 @@ jobs:
       - name: Run E2E tests
         if: success() || failure()
         run: |
+          echo ${{ env.TESTS_STATUS }}
           docker-compose run --rm -e TESTS_STATUS=${{ env.TESTS_STATUS }} e2e-tests
         env:
           TESTS_STATUS: ${{ env.TESTS_STATUS }}
