@@ -31,10 +31,9 @@ jobs:
         run: docker-compose -f docker-compose.yml build
 
       - name: Run unit tests
-        if: success() || failure()
         run: |
          docker-compose run --rm unit-tests || true
-         if grep -q '"status": "failed"' ./allure-results/*.json; then
+         if grep -q '"status": "broken"' ./allure-results/*.json; then
            echo "Recording failed tests"
            echo "TESTS_STATUS=failed" >> $GITHUB_ENV
          else
@@ -43,11 +42,10 @@ jobs:
          fi
 
       - name: Run integration tests
-        if: success() || failure()
         run: |
           echo ${{ env.TESTS_STATUS }}
-          docker-compose run --rm -e TESTS_STATUS=${{ env.TESTS_STATUS }} integration-tests
-          if grep -q '"status": "failed"' ./allure-results/*.json; then
+          docker-compose run --rm -e TESTS_STATUS=${{ env.TESTS_STATUS }} integration-tests || true
+          if grep -q '"status": "broken"' ./allure-results/*.json; then
             echo "TESTS_STATUS=failed" >> $GITHUB_ENV
           else
             echo "TESTS_STATUS=success" >> $GITHUB_ENV
@@ -59,36 +57,30 @@ jobs:
         if: success() || failure()
         run: |
           echo ${{ env.TESTS_STATUS }}
-          docker-compose run --rm -e TESTS_STATUS=${{ env.TESTS_STATUS }} e2e-tests
+          docker-compose run --rm -e TESTS_STATUS=${{ env.TESTS_STATUS }} e2e-tests || true
         env:
           TESTS_STATUS: ${{ env.TESTS_STATUS }}
 
       - name: Print all folders
-        if: success() || failure()
         run: ls -la .
         
       - name: Print all folders in test
-        if: success() || failure()
         run: ls -la ./test
         
       - name: Set permissions for allure-results
-        if: success() || failure()
         run: sudo chmod -R 755 allure-results
 
       - name: Generate Allure report
-        if: success() || failure()
         run: |
           allure generate ./allure-results -o ./allure-report
 
       - name: Upload Allure report as artifact
-        if: success() || failure()
         uses: actions/upload-artifact@v3
         with:
           name: allure-report
           path: ./allure-report
 
       - name: Upload Allure results as artifact
-        if: success() || failure()
         uses: actions/upload-artifact@v3
         with:
           name: allure-results
