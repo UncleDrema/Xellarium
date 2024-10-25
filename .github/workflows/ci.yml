@@ -38,9 +38,12 @@ jobs:
 
       - name: Run E2E tests
         run: docker-compose run --rm e2e-tests
-        
+
       - name: Print all folders
-        run: ls -la
+        run: ls -la .
+        
+      - name: Print all folders in test
+        run: ls -la ./test
         
       - name: Set permissions for allure-results
         run: sudo chmod -R 755 test/allure-results

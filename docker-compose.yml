@@ -62,6 +62,8 @@ services:
       ConnectionStrings__Postgres: "Host=xellarium-test-db;Database=testdb;Username=testuser;Password=testpassword"
     depends_on:
       - xellarium-test-db
+    volumes:
+      - ./allure-results:/app/test/allure-results
 
   integration-tests:
      image: xellarium-tests
@@ -73,6 +75,8 @@ services:
        ConnectionStrings__Postgres: "Host=xellarium-test-db;Database=testdb;Username=testuser;Password=testpassword"
      depends_on:
        - xellarium-test-db
+     volumes:
+       - ./allure-results:/app/test/allure-results
 
   e2e-tests:
      image: xellarium-tests
@@ -84,6 +88,8 @@ services:
        ServerAddress: "http://test-api:8080/"
      depends_on:
        - test-api
+     volumes:
+       - ./allure-results:/app/test/allure-results
 
 volumes:
   pgdata-test:
