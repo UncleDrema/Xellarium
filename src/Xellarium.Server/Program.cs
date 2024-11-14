@@ -1,10 +1,12 @@
 using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
 using Microsoft.AspNetCore.HttpLogging;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.EntityFrameworkCore.Infrastructure.Internal;
 using Microsoft.Net.Http.Headers;
+using Microsoft.OpenApi.Models;
 using Serilog;
 using Serilog.Exceptions;
 using Xellarium.Authentication;
@@ -153,19 +155,21 @@ public static class Program
         
         await DataAccessConfiguration.EnsureSeedData(app);
 
-        // Configure the HTTP request pipeline.
-        if (app.Environment.IsDevelopment())
+        app.UseDeveloperExceptionPage();
+        app.UseSwagger(c =>
         {
-            app.UseDeveloperExceptionPage();
-            app.UseSwagger();
+            c.RouteTemplate = "api/{documentName}/swagger.json";
+        });
+        var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
+        foreach (var description in provider.ApiVersionDescriptions)
+        {
             app.UseSwaggerUI(opt =>
             {
-                var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
-                foreach (var description in provider.ApiVersionDescriptions)
-                {
-                    opt.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", $"Xellarium API {description.GroupName}");
-                }
+                opt.SwaggerEndpoint($"/api/{description.GroupName}/swagger.json", $"Xellarium API {description.GroupName}");
+                opt.RoutePrefix = $"api/{description.GroupName.ToLower()}";
+                logger.Information("Hosted swagger at {RoutePrefix}", opt.RoutePrefix);
             });
+            
         }
 
         app.UseHttpsRedirection();
@@ -173,6 +177,8 @@ public static class Program
         app.UseAuthorization();
 
         app.MapControllers();
+
+        app.UsePathBase("/legacy");
 
         await app.RunAsync();
     }

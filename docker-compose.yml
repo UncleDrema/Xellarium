@@ -1,6 +1,35 @@
-﻿version: '3.8'
+version: '3.9'
 
 services:
+  nginx:
+    container_name: xellarium-nginx
+    image: nginx:latest
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./static:/usr/share/nginx/html:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+      - pgadmin
+  pgadmin:
+    container_name: xellarium-pgadmin
+    image: dpage/pgadmin4
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@example.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+      - PGADMIN_CONFIG_SERVER_MODE=False
+      - PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED=False
+    entrypoint: /bin/sh -c "chmod 600 /pgpass; /entrypoint.sh;"
+    user: root
+    volumes:
+      - ./pgadmin/pgpass:/pgpass
+      - ./pgadmin/servers.json:/pgadmin4/servers.json
+    ports:
+      - "5050:80"
+    depends_on:
+      - xellarium-db
+
   xellarium-db:
     container_name: xellarium-db
     image: postgres:15
@@ -11,20 +40,33 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5433:5432"
         
   api:
     container_name: api
     image: xellarium.server
     build:
       context: ./src/
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile_WebApi
     environment:
       Databases__Postgres__ConnectionString: "Host=xellarium-db;Port=5432;Database=xellarium;Username=uncledrema;Password=dremakorol"
     depends_on:
       - xellarium-db
     ports:
       - "5000:8080"
+  
+  client:
+    container_name: client
+    image: xellarium.client
+    build:
+      context: ./src/
+      dockerfile: Dockerfile_WebClient
+    depends_on:
+      - api
+    volumes:
+      - ./src/Xellarium.Client/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "5080:80"
   
   xellarium-test-db:
     container_name: xellarium-test-db
@@ -34,7 +76,7 @@ services:
       POSTGRES_PASSWORD: testpassword
       POSTGRES_DB: testdb
     ports:
-      - "5433:5432"
+      - "5434:5432"
     volumes:
       - pgdata-test:/var/lib/postgresql/data
 
@@ -46,7 +88,7 @@ services:
       dockerfile: Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: Testing
-      Databases__Postgres__ConnectionString: "Host=xellarium-test-db;Port=5432;Database=testdb;Username=testuser;Password=testpassword"
+      Databases__Postgres__ConnectionString: "Host=xellarium-test-db;Port=5434;Database=testdb;Username=testuser;Password=testpassword"
     depends_on:
       - xellarium-test-db
     ports:
@@ -94,3 +136,4 @@ services:
 volumes:
   pgdata-test:
   pgdata:
+    
