@@ -1,0 +1,12 @@
+.page {
+    min-height: 100vh;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: url("bg.png") no-repeat center bottom fixed;
+    background-size: 100vw 75vh;
+}
+
+main {
+    flex: 1;
+}   

@@ -26,15 +26,14 @@ public class Program
         builder.Services.AddScoped<ApiMessageHandler>();
         builder.Services.AddHttpClient("API", options =>
         {
-            options.BaseAddress = new Uri("http://localhost:5000/");
+            //options.BaseAddress = new Uri("http://localhost:5000/");
+            options.BaseAddress = new Uri("http://192.168.1.69/");
         })
         .AddHttpMessageHandler<ApiMessageHandler>();
 
         builder.Services.AddScoped<IApiLogic, ApiLogic>();
 
         var app = builder.Build();
-        
-        
         
         await app.RunAsync();
     }

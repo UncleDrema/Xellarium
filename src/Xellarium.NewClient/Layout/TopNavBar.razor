@@ -1,0 +1,54 @@
+@using Syncfusion.Blazor.Buttons
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
+@using Xellarium.NewClient.Authentication
+@inject TokenAuthenticationStateProvider authStateProvider
+@inject NavigationManager NavigationManager
+<nav class="top-navbar">
+    <!-- Логотип -->
+    <div class="logo">
+        <a href="/">
+            <img src="logo.png" alt="Xellarium" />
+        </a>
+    </div>
+
+    <!-- Навигационные элементы -->
+    <div class="nav-links">
+        <AuthorizeView>
+            <Authorized>
+                <a href="/profile">Профиль</a>
+                <a href="/collection">Коллекция</a>
+            </Authorized>
+        </AuthorizeView>
+    </div>
+
+    <!-- Кнопки авторизации -->
+    <div class="auth-buttons">
+        <AuthorizeView>
+            <Authorized>
+                <SfButton CssClass="e-bigger" @onclick="Logout">Выйти</SfButton>
+            </Authorized>
+            <NotAuthorized>
+                <SfButton CssClass="e-bigger" @onclick="NavigateToLogin">Войти</SfButton>
+                <SfButton CssClass="e-bigger" @onclick="NavigateToRegister">Регистрация</SfButton>
+            </NotAuthorized>
+        </AuthorizeView>
+    </div>
+</nav>
+
+@code {
+    private async Task Logout()
+    {
+        await authStateProvider.MarkUserAsLoggedOut();
+    }
+
+    private void NavigateToLogin()
+    {
+        NavigationManager.NavigateTo("/login");
+    }
+
+    private void NavigateToRegister()
+    {
+        NavigationManager.NavigateTo("/register");
+    }
+}

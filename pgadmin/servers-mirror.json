@@ -1,0 +1,15 @@
+{
+  "Servers": {
+    "1": {
+      "Group": "Servers",
+      "Name": "Xellarium",
+      "Host": "xellarium-mirror",
+      "Port": 5432,
+      "MaintenanceDB": "postgres",
+      "Username": "uncledrema",
+      "PassFile": "/pgpass",
+      "SSLMode": "prefer",
+      "Favorite": true
+    }
+  }
+}

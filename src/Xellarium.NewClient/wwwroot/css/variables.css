@@ -1,0 +1,10 @@
+:root {
+    --bg-color: #000000;
+    --button-bg: #3b0e56;
+    --button-hover: #77548C;
+    --bg-decor: #1d012d;
+    --text-color: #ffffff;
+    --input-label: #49454e;
+    --font-primary: 'Josefin Sans', sans-serif;
+    --font-secondary: 'Inter', sans-serif;
+}

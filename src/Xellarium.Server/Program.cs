@@ -179,6 +179,12 @@ public static class Program
         app.MapControllers();
 
         app.UsePathBase("/legacy");
+        
+        app.Use(async (context, next) =>
+        {
+           context.Response.Headers.Add("Server", "Xellarium");
+           await next.Invoke();
+        });
 
         await app.RunAsync();
     }

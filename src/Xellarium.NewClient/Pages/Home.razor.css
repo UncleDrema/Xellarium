@@ -1,0 +1,6 @@
+.home-title {
+    padding: 30vh 0 0 0;
+    font-family: var(--font-primary), sans-serif;
+    font-size: 96px;
+    text-transform: uppercase;
+}
