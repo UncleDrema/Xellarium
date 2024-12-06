@@ -9,23 +9,7 @@ services:
       - "80:80"
     depends_on:
       - api
-      - api2
-      - api3
       - pgadmin
-      - nginx-mirror
-  nginx-mirror:
-    container_name: xellarium-nginx-mirror
-    image: nginx:latest
-    volumes:
-      - ./nginx/nginx_mirror.conf:/etc/nginx/nginx.conf:ro
-      - ./static:/usr/share/nginx/html:ro
-    ports:
-      - "81:80"
-    depends_on:
-      - api-mirror
-      - api2-mirror
-      - api3-mirror
-      - pgadmin-mirror
   pgadmin:
     container_name: xellarium-pgadmin
     image: dpage/pgadmin4
@@ -43,29 +27,9 @@ services:
       - "5050:80"
     depends_on:
       - xellarium-db
-  pgadmin-mirror:
-    container_name: xellarium-pgadmin-mirror
-    image: dpage/pgadmin4
-    environment:
-      - PGADMIN_DEFAULT_EMAIL=admin@example.com
-      - PGADMIN_DEFAULT_PASSWORD=admin
-      - PGADMIN_CONFIG_SERVER_MODE=False
-      - PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED=False
-    entrypoint: /bin/sh -c "chmod 600 /pgpass; /entrypoint.sh;"
-    user: root
-    volumes:
-      - ./pgadmin/pgpass-mirror:/pgpass
-      - ./pgadmin/servers-mirror.json:/pgadmin4/servers.json
-    ports:
-      - "5051:80"
-    depends_on:
-      - xellarium-replica
   xellarium-db:
     container_name: xellarium-db
-    image: xellarium.postgres
-    build:
-      context: .
-      dockerfile: Dockerfile_Postgres
+    image: postgres:15
     environment:
       - POSTGRES_USER=uncledrema
       - POSTGRES_PASSWORD=dremakorol
@@ -73,37 +37,8 @@ services:
       - TARGET=xellarium-replica
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./pg_configs/postgresql.conf:/etc/postgresql/postgresql.conf
-    command:
-      - "postgres"
-      - "-c"
-      - "config_file=/etc/postgresql/postgresql.conf"
     ports:
       - "5433:5432"
-      
-  xellarium-replica:
-    container_name: xellarium-replica
-    image: xellarium.postgres
-    build:
-      context: .
-      dockerfile: Dockerfile_Postgres
-    environment:
-      - POSTGRES_USER=uncledrema
-      - POSTGRES_PASSWORD=dremakorol
-      - PGDATA=/var/lib/postgresql/data/
-      - TARGET=xellarium-db
-    volumes:
-      - replica_pgdata:/var/lib/postgresql/data
-      - ./pg_configs/postgresql.conf:/etc/postgresql/postgresql.conf
-    command:
-      - "postgres"
-      - "-c"
-      - "config_file=/etc/postgresql/postgresql.conf"
-    ports:
-      - "5434:5432"
-    depends_on:
-      - xellarium-db
-        
   api:
     container_name: api
     image: xellarium.server
@@ -116,71 +51,6 @@ services:
       - xellarium-db
     ports:
       - "5000:8080"
-  
-  api2:
-    container_name: api2
-    image: xellarium.server
-    build:
-      context: ./src/
-      dockerfile: Dockerfile_WebApi
-    environment:
-      Databases__Postgres__ConnectionString: "Host=xellarium-db;Port=5432;Database=xellarium;Username=uncledrema;Password=dremakorol"
-    depends_on:
-      - xellarium-db
-    ports:
-      - "5001:8080"
-  
-  api3:
-    container_name: api3
-    image: xellarium.server
-    build:
-      context: ./src/
-      dockerfile: Dockerfile_WebApi
-    environment:
-      Databases__Postgres__ConnectionString: "Host=xellarium-db;Port=5432;Database=xellarium;Username=uncledrema;Password=dremakorol"
-    depends_on:
-      - xellarium-db
-    ports:
-      - "5002:8080"
-    
-  api-mirror:
-    container_name: api-mirror
-    image: xellarium.server
-    build:
-      context: ./src/
-      dockerfile: Dockerfile_WebApi
-    environment:
-      Databases__Postgres__ConnectionString: "Host=xellarium-replica;Port=5432;Database=xellarium;Username=uncledrema;Password=dremakorol"
-    depends_on:
-      - xellarium-replica
-    ports:
-      - "5100:8080"
-  
-  api2-mirror:
-    container_name: api2-mirror
-    image: xellarium.server
-    build:
-      context: ./src/
-      dockerfile: Dockerfile_WebApi
-    environment:
-      Databases__Postgres__ConnectionString: "Host=xellarium-replica;Port=5432;Database=xellarium;Username=uncledrema;Password=dremakorol"
-    depends_on:
-      - xellarium-replica
-    ports:
-      - "5101:8080"
-  
-  api3-mirror:
-    container_name: api3-mirror
-    image: xellarium.server
-    build:
-      context: ./src/
-      dockerfile: Dockerfile_WebApi
-    environment:
-      Databases__Postgres__ConnectionString: "Host=xellarium-replica;Port=5432;Database=xellarium;Username=uncledrema;Password=dremakorol"
-    depends_on:
-      - xellarium-replica
-    ports:
-      - "5102:8080"
   
   client:
     container_name: client
@@ -242,6 +112,7 @@ services:
      command: --filter "(TestCategory = Integration)" --property:WarningLevel=0
      environment:
        ConnectionStrings__Postgres: "Host=xellarium-test-db;Database=testdb;Username=testuser;Password=testpassword"
+       ApiUri: "http://test-api:8080/"
      depends_on:
        - xellarium-test-db
      volumes:
@@ -263,5 +134,4 @@ services:
 volumes:
   pgdata-test:
   pgdata:
-  replica_pgdata:
     

@@ -6,7 +6,7 @@ COPY . .
 
 RUN dotnet restore
 
-FROM build as final
+FROM build AS final
 
 WORKDIR /app
 

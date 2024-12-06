@@ -9,7 +9,7 @@ using Xellarium.DataAccess.Repository;
 
 namespace Xellarium.IntegrationTests;
 
-[AllureParentSuite("Intergration tests")]
+[AllureParentSuite("Integration tests")]
 [AllureSuite("User")]
 public class AuthenticationTests : IDisposable
 {

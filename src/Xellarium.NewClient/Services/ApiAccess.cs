@@ -13,6 +13,23 @@ public class ApiAccess(IHttpClientFactory httpClientFactory) : IApiAccess
     
     private HttpClient Client => httpClientFactory.CreateClient(ApiClientName);
 
+    private async Task<ResultCode> DeleteAsync(string uri)
+    {
+        var response = await Client.DeleteAsync(uri);
+        if (response.IsSuccessStatusCode)
+        {
+            return ResultCode.Ok;
+        }
+        else if (response.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            return ResultCode.Unauthorized;
+        }
+        else
+        {
+            return ResultCode.Error;
+        }
+    }
+    
     private async Task<ResultCode> PostAsync(string uri)
     {
         var response = await Client.PostAsync(uri, null);
@@ -65,6 +82,25 @@ public class ApiAccess(IHttpClientFactory httpClientFactory) : IApiAccess
             return (ResultCode.Error, default);
         }
     }
+    
+    private async Task<ResultCode> PostAsync<TBody>(string uri, TBody body)
+    {
+        var json = JsonSerializer.Serialize(body);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        var response = await Client.PostAsync(uri, content);
+        if (response.IsSuccessStatusCode)
+        {
+            return ResultCode.Ok;
+        }
+        else if (response.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            return ResultCode.Unauthorized;
+        }
+        else
+        {
+            return ResultCode.Error;
+        }
+    }
 
     public async Task<GetUserResult> GetCurrentUser()
     {
@@ -80,13 +116,13 @@ public class ApiAccess(IHttpClientFactory httpClientFactory) : IApiAccess
 
     public async Task<GetNeighborhoodsResult> GetNeighborhoods()
     {
-        var (code, response) =  await GetAsync<NeighborhoodDTO[]>("neighborhoods");
+        var (code, response) =  await GetAsync<NeighborhoodDTO[]>("neighbourhoods");
         return new GetNeighborhoodsResult(code, response);
     }
 
     public async Task<GetNeighborhoodResult> GetNeighborhood(int id)
     {
-        var (code, response) =  await GetAsync<NeighborhoodDTO>($"neighborhoods/{id}");
+        var (code, response) =  await GetAsync<NeighborhoodDTO>($"neighbourhoods/{id}");
         return new GetNeighborhoodResult(code, response);
     }
 
@@ -114,33 +150,55 @@ public class ApiAccess(IHttpClientFactory httpClientFactory) : IApiAccess
         return new AddCollectionResult(code, response);
     }
 
+    public async Task<DeleteCollectionResult> DeleteCollection(int collectionId)
+    {
+        var code = await DeleteAsync($"collections/{collectionId}");
+        return new DeleteCollectionResult(code);
+    }
+
     public async Task<GetRuleResult> GetRule(int ruleId)
     {
         var (code, response) =  await GetAsync<RuleDTO>($"rules/{ruleId}");
         return new GetRuleResult(code, response);
     }
 
-    public async Task<AddRuleToCollectionResult> AddRuleToCollection(int collectionId, PostRuleDTO rulePostDto)
+    public async Task<AddNewRuleToCollectionResult> AddNewRuleToCollection(int collectionId, PostRuleDTO rulePostDto)
     {
         var (code, response) =  await PostAsync<PostRuleDTO, RuleDTO>($"collections/{collectionId}/rules", rulePostDto);
-        return new AddRuleToCollectionResult(code, response);
+        return new AddNewRuleToCollectionResult(code, response);
+    }
+
+    public async Task<AddRuleToCollectionResult> AddRuleToCollection(int collectionId, int ruleId)
+    {
+        var code = await PostAsync($"collections/{collectionId}", new RuleReferenceDTO
+        {
+            Id = ruleId
+        });
+
+        return new AddRuleToCollectionResult(code);
+    }
+
+    public async Task<DeleteRuleResult> DeleteRule(int ruleId)
+    {
+        var code = await DeleteAsync($"rules/{ruleId}");
+        return new DeleteRuleResult(code);
     }
 
     public async Task<LoginResult> Login(UserLoginDTO userLoginDto)
     {
-        var (code, response) =  await PostAsync<UserLoginDTO, AuthenticatedTokenDTO>("login", userLoginDto);
+        var (code, response) =  await PostAsync<UserLoginDTO, AuthenticatedTokenDTO>("authentication/login", userLoginDto);
         return new LoginResult(code, response);
     }
 
     public async Task<RegisterResult> Register(UserRegisterDTO registerDto)
     {
-        var (code, response) =  await PostAsync<UserRegisterDTO, RegisteredUserDTO>("register", registerDto);
+        var (code, response) =  await PostAsync<UserRegisterDTO, RegisteredUserDTO>("authentication/register", registerDto);
         return new RegisterResult(code, response);
     }
 
     public async Task<Verify2FaResult> Verify2Fa(VerifyTwoFactorRequestDTO verifyTwoFactorRequestDto)
     {
-        var (code, response) =  await PostAsync<VerifyTwoFactorRequestDTO, string>("verify-2fa", verifyTwoFactorRequestDto);
+        var (code, response) =  await PostAsync<VerifyTwoFactorRequestDTO, string>("authentication/verify-2fa", verifyTwoFactorRequestDto);
         return new Verify2FaResult(code, response);
     }
 }
