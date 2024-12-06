@@ -1,6 +1,69 @@
 @page "/login"
+@using System.ComponentModel.DataAnnotations
+@using Blazored.LocalStorage
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Buttons
+@using Xellarium.NewClient.Services
+@using Xellarium.Shared.DTO
+@inject IApiAccess api
+@inject ClientAuthenticationService auth
+@inject NavigationManager navigationManager
 <h3>Login</h3>
+<EditForm Model="@_loginModel" OnSubmit="SubmitLogin">
+    <DataAnnotationsValidator />
+    <ValidationSummary/>
+    <div class="form-group">
+        <label for="username">Username:</label>
+        <SfTextBox ID="username" @bind-Value="_loginModel.Username"></SfTextBox>
+    </div>
+    <div class="form-group">
+        <label for="password">Password:</label>
+        <SfTextBox ID="password" @bind-Value="_loginModel.Password"></SfTextBox>
+    </div>
+    <div class="form-group">
+        <label for="2fa-code">2FA code:</label>
+        <SfTextBox ID="2fa-code" @bind-Value="_loginModel.TwoFactorCode"></SfTextBox>
+    </div>
+    <SfButton>Submit</SfButton>
+</EditForm>
 
 @code {
+    private readonly LoginModel _loginModel = new LoginModel();
     
+    public class LoginModel
+    {
+        [Required]
+        public string Username { get; set; }
+        [Required]
+        public string Password { get; set; }
+        
+        public string? TwoFactorCode { get; set; }
+    }
+
+    private async Task SubmitLogin(EditContext context)
+    {
+        bool isValid = context.Validate();
+        if (isValid)
+        {
+            var loginResult = await api.Login(new UserLoginDTO
+            {
+                Username = _loginModel.Username,
+                Password = _loginModel.Password,
+                TwoFactorCode = _loginModel.TwoFactorCode
+            });
+            if (loginResult.Result is ResultCode.Ok && loginResult.Response is not null)
+            {
+                await auth.AuthenticateWithToken(loginResult.Response.Token);
+                navigationManager.NavigateTo("/", true);
+            }
+            else
+            {
+                Console.WriteLine($"Result code invalid: {loginResult.Result}");
+            }
+        }
+        else
+        {
+            Console.WriteLine("Invalid form");
+        }
+    }
 }

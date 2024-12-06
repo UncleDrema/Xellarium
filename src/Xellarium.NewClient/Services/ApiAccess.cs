@@ -10,7 +10,7 @@ namespace Xellarium.NewClient.Services;
 public class ApiAccess(IHttpClientFactory httpClientFactory) : IApiAccess
 {
     public const string ApiClientName = "API";
-    
+
     private HttpClient Client => httpClientFactory.CreateClient(ApiClientName);
 
     private async Task<ResultCode> DeleteAsync(string uri)
@@ -27,23 +27,6 @@ public class ApiAccess(IHttpClientFactory httpClientFactory) : IApiAccess
         else
         {
             return ResultCode.Error;
-        }
-    }
-    
-    private async Task<ResultCode> PostAsync(string uri)
-    {
-        var response = await Client.PostAsync(uri, null);
-        if (response.IsSuccessStatusCode)
-        {
-            return ResultCode.Ok;
-        }
-        else if (response.StatusCode == HttpStatusCode.Unauthorized)
-        {
-            return ResultCode.Unauthorized;
-        }
-        else
-        {
-             return ResultCode.Error;
         }
     }
     

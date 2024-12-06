@@ -33,7 +33,6 @@ public class DatabaseFixture : IDisposable
 
     public void Dispose()
     {
-        Context.Database.EnsureDeleted();
         Context.Dispose();
     }
 }

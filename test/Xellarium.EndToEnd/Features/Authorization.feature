@@ -7,5 +7,6 @@ Feature: User Authorization
     And the user provides the two-factor authentication code from binded 2FA-app with secret <Secret>
     Then the user should recieve a valid JWT token
   Examples:
-    | UserName | Password | Secret | Code |
-    | admin | admin | null | null |
+    | UserName | Password      | Secret                           |
+    | user     | user          | null                             |
+    | testuser | superpasswrod | NF6YBS4LXPWVYXYJ4RW5RRPETL5BRWMG |

@@ -1,0 +1,33 @@
+@page "/profile"
+@using Xellarium.NewClient.Services
+@inject IApiAccess api
+@inject NavigationManager NavigationManager
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+<div class="alert alert-danger mt-3" role="alert">
+    @errorMessage
+</div>
+}
+else
+{
+<p><em>Loading...</em></p>
+}
+
+@code {
+    private string errorMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var (resultCode, profile) = await api.GetCurrentUser();
+        if (resultCode == ResultCode.Ok && profile != null)
+        {
+            NavigationManager.NavigateTo($"/profile/{profile.Id}");
+            errorMessage = string.Empty;
+        }
+        else
+        {
+            errorMessage = "Profile access error";
+        }
+    }
+}

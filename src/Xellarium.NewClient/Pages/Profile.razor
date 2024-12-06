@@ -1,0 +1,58 @@
+@page "/profile/{UserId}"
+@using Xellarium.NewClient.Services
+@using Xellarium.Shared.DTO
+@inject IApiAccess api
+<h3>Profile</h3>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger mt-3" role="alert">
+        @errorMessage
+    </div>
+}
+else if (user == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <PageTitle>@user.Name's Profile</PageTitle>
+    <p>Name: @user.Name</p>
+    <p>Role: @user.Role</p>
+    <p>Warnings: @user.WarningsCount</p>
+    @if (user.IsBlocked)
+    {
+        <p style="color:red;">User is blocked</p>
+    }
+    <h4>Rules</h4>
+    <RuleList Rules="user.Rules" />
+    <NavLink class="btn btn-primary" href="/newrule">Add New Rule</NavLink>
+    <br/><br/>
+    <h4>Collections</h4>
+    <CollectionList Collections="user.Collections" />
+    <NavLink class="btn btn-primary" href="/newcollection">Add New Collection</NavLink>
+}
+
+@code {
+    private string errorMessage = string.Empty;
+    
+    [Parameter]
+    public string UserId { get; set; }
+    
+    private UserDTO? user;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var userId = int.Parse(UserId);
+        var (resultCode, profile) = await api.GetUser(userId);
+        if (resultCode == ResultCode.Ok)
+        {
+            user = profile;
+            errorMessage = string.Empty;
+        }
+        else
+        {
+            errorMessage = "Profile access error";
+        }
+    }
+}

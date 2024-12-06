@@ -2,8 +2,8 @@
 @using System.Security.Claims
 @using Microsoft.AspNetCore.Components.Authorization
 @using Xellarium.NewClient.Authentication
-@inject TokenAuthenticationStateProvider authStateProvider
-@inject NavigationManager NavigationManager
+@inject ClientAuthenticationService auth
+@inject NavigationManager navigationManager
 <nav class="top-navbar">
     <!-- Логотип -->
     <div class="logo">
@@ -17,7 +17,7 @@
         <AuthorizeView>
             <Authorized>
                 <a href="/profile">Профиль</a>
-                <a href="/collection">Коллекция</a>
+                <a href="/collections">Коллекции</a>
             </Authorized>
         </AuthorizeView>
     </div>
@@ -39,16 +39,17 @@
 @code {
     private async Task Logout()
     {
-        await authStateProvider.MarkUserAsLoggedOut();
+        await auth.LogoutUser();
+        navigationManager.NavigateTo("/", true);
     }
 
     private void NavigateToLogin()
     {
-        NavigationManager.NavigateTo("/login");
+        navigationManager.NavigateTo("/login");
     }
 
     private void NavigateToRegister()
     {
-        NavigationManager.NavigateTo("/register");
+        navigationManager.NavigateTo("/register");
     }
 }

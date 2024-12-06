@@ -59,6 +59,11 @@ public class AuthenticationTests : IDisposable
         var (userService, authService) = GetServices(_databaseFixture.Context);
         
         AllureApi.Step("Register user");
+        var existingUser = await userService.GetUserByName("user");
+        if (existingUser != null)
+        {
+            await userService.DeleteUser(existingUser.Id);
+        }
         await authService.RegisterUser("user", "password");
         
         AllureApi.Step("Try authenticate user");

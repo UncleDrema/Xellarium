@@ -25,14 +25,16 @@ public class Program
         builder.Services.AddCascadingAuthenticationState();
         builder.Services.AddBlazoredLocalStorage();
 
-        builder.Services.AddScoped<TokenAuthenticationStateProvider>();
-        builder.Services.AddScoped<AuthenticationStateProvider, TokenAuthenticationStateProvider>();
         builder.Services.AddScoped<ApiMessageHandler>();
         builder.Services.AddHttpClient(ApiAccess.ApiClientName, options =>
         {
-            options.BaseAddress = new Uri(clientConfig.ApiUri);
+            options.BaseAddress = new Uri("http://localhost:5000/api/v2/");
         })
         .AddHttpMessageHandler<ApiMessageHandler>();
+        
+        builder.Services.AddScoped<TokenAuthenticationStateProvider>();
+        builder.Services.AddScoped<AuthenticationStateProvider, TokenAuthenticationStateProvider>();
+        builder.Services.AddScoped<ClientAuthenticationService>();
 
         builder.Services.AddScoped<IApiAccess, ApiAccess>();
 
