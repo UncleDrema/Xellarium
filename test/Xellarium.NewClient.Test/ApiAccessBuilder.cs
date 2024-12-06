@@ -17,6 +17,7 @@ public class ApiAccessBuilder
         _configuration = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.Test.json")
+            .AddEnvironmentVariables()
             .Build();
     }
     

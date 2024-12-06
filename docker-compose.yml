@@ -82,7 +82,7 @@ services:
     image: xellarium.server
     build:
       context: ./src/
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile_WebApi
     environment:
       ASPNETCORE_ENVIRONMENT: Testing
       Databases__Postgres__ConnectionString: "Host=xellarium-test-db;Port=5434;Database=testdb;Username=testuser;Password=testpassword"
