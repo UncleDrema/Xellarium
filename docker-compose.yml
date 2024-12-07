@@ -128,6 +128,7 @@ services:
      environment:
        ServerAddress: "http://test-api:8080/"
      depends_on:
+       - xellarium-test-db
        - test-api
      volumes:
        - ./allure-results:/app/test/allure-results

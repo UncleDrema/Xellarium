@@ -44,6 +44,9 @@ jobs:
       - name: Run integration tests
         run: |
           echo ${{ env.TESTS_STATUS }}
+          docker-compose down -v xellarium-test-db
+          docker-compose up xellarium-test-db -d
+          docker-compose up test-api -d
           docker-compose run --rm -e TESTS_STATUS=${{ env.TESTS_STATUS }} integration-tests || true
           if grep -q '"status": "broken"' ./allure-results/*.json; then
             echo "TESTS_STATUS=failed" >> $GITHUB_ENV
@@ -57,6 +60,9 @@ jobs:
         if: success() || failure()
         run: |
           echo ${{ env.TESTS_STATUS }}
+          docker-compose down -v xellarium-test-db
+          docker-compose up xellarium-test-db -d
+          docker-compose up test-api -d
           docker-compose run --rm -e TESTS_STATUS=${{ env.TESTS_STATUS }} e2e-tests || true
         env:
           TESTS_STATUS: ${{ env.TESTS_STATUS }}

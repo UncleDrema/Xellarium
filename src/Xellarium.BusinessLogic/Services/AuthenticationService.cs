@@ -29,6 +29,16 @@ public class AuthenticationService(IUserService userService) : IAuthenticationSe
 
         return null;
     }
+    
+    public async Task ChangePassword(string name, string currentPassword, string newPassword)
+    {
+        var user = await userService.GetUserByName(name);
+        if (user == null) throw new ArgumentException("User not found");
+        if (!VerifyPassword(currentPassword, user.PasswordHash)) throw new ArgumentException("Wrong password");
+        
+        user.PasswordHash = HashPassword(newPassword);
+        await userService.UpdateUser(user);
+    }
 
     public string HashPassword(string password)
     {

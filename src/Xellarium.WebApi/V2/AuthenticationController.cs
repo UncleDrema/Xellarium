@@ -83,6 +83,29 @@ public class AuthenticationController(IAuthenticationService _service, IMapper m
             Type = Jwt.AuthType
         });
     }
+    
+    [HttpPost("change-password")]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ChangePassword(ChangePasswordDTO changePasswordDto)
+    {
+        var (name, currentPassword, newPassword, twoFactorCode) = (Name: changePasswordDto.Username, changePasswordDto.CurrentPassword, changePasswordDto.NewPassword, changePasswordDto.TwoFactorCode);
+        var user = await _service.AuthenticateUser(name, currentPassword);
+        if (user == null)
+        {
+            return Unauthorized("Wrong password");
+        }
+        
+        if (user.TwoFactorSecret != null &&
+            (twoFactorCode == null ||
+             !VerifyTwoFactorCode(twoFactorCode, user.TwoFactorSecret)))
+        {
+            return Unauthorized("Wrong two factor code");
+        }
+
+        await _service.ChangePassword(name, currentPassword, newPassword);
+        return Ok("Password changed");
+    }
 
     [HttpPost("verify-2fa")]
     [AllowAnonymous]

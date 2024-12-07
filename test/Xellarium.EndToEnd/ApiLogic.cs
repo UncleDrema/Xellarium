@@ -24,4 +24,13 @@ public class ApiLogic : IApiLogic
         var response = await Client().PostAsync(uri, content);
         return response.IsSuccessStatusCode;
     }
+    
+    public async Task<bool> TryChangePassword(ChangePasswordDTO changePasswordDto)
+    {
+        var uri = "api/v2/authentication/change-password";
+        var json = JsonSerializer.Serialize(changePasswordDto);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        var response = await Client().PostAsync(uri, content);
+        return response.IsSuccessStatusCode;
+    }
 }

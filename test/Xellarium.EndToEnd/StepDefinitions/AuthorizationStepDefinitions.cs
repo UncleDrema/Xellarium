@@ -79,4 +79,34 @@ public sealed class AuthorizationStepDefinitions(IReqnrollOutputHelper output, I
         if (user != null)
             await userService.DeleteUser(user.Id);
     }
+
+    [When(@"the user changes the password to (.*)")]
+    public async Task WhenTheUserChangesThePassword(string newPassword)
+    {
+        Assert.True((await logic.TryChangePassword(new ChangePasswordDTO
+        {
+            Username = _loginUsername!,
+            CurrentPassword = _loginPassword!,
+            TwoFactorCode = _loginCode,
+            NewPassword = newPassword
+        })));
+        
+        _loginPassword = newPassword;
+    }
+
+    [Then(@"the user should not recieve a valid JWT token")]
+    public async Task ThenTheUserShouldNotRecieveAValidJwtToken()
+    {
+        Assert.NotNull(_loginUsername);
+        Assert.NotNull(_loginPassword);
+
+        var loginSuccessful = await logic.IsLoginSuccessful(new UserLoginDTO
+        {
+            Username = _loginUsername,
+            Password = _loginPassword,
+            TwoFactorCode = _loginCode
+        });
+        Assert.False(loginSuccessful);
+        await Cleanup();
+    }
 }
