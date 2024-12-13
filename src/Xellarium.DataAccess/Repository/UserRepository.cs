@@ -11,10 +11,11 @@ public class UserRepository(XellariumContext context, ILogger logger)
 {
     public async Task<User?> GetByName(string name)
     {
+        // do not include deleted rules and collections
         return await _context.Users
             .Where(e => !e.IsDeleted)
-            .Include(u => u.Collections)
-            .Include(u => u.Rules)
+            .Include(u => u.Collections.Where(e => !e.IsDeleted))
+            .Include(u => u.Rules.Where(e => !e.IsDeleted))
             .FirstOrDefaultAsync(u => u.Name == name);
     }
     
@@ -22,8 +23,8 @@ public class UserRepository(XellariumContext context, ILogger logger)
     {
         return await _context.Users
             .Where(e => !e.IsDeleted)
-            .Include(u => u.Collections)
-            .Include(u => u.Rules)
+            .Include(u => u.Collections.Where(e => !e.IsDeleted))
+            .Include(u => u.Rules.Where(e => !e.IsDeleted))
             .ToListAsync();
     }
     
@@ -31,8 +32,8 @@ public class UserRepository(XellariumContext context, ILogger logger)
     {
         return await _context.Users
             .Where(e => !e.IsDeleted)
-            .Include(u => u.Collections)
-            .Include(u => u.Rules)
+            .Include(u => u.Collections.Where(e => !e.IsDeleted))
+            .Include(u => u.Rules.Where(e => !e.IsDeleted))
             .Where(u => ids.Contains(u.Id))
             .ToListAsync();
     }
@@ -41,8 +42,8 @@ public class UserRepository(XellariumContext context, ILogger logger)
     {
         return await _context.Users
             .Where(e => !e.IsDeleted)
-            .Include(u => u.Collections)
-            .Include(u => u.Rules)
+            .Include(u => u.Collections.Where(e => !e.IsDeleted))
+            .Include(u => u.Rules.Where(e => !e.IsDeleted))
             .FirstOrDefaultAsync(u => u.Id == id);
     }
 }

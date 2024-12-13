@@ -1,8 +1,9 @@
 @page "/profile/{UserId}"
 @using Xellarium.NewClient.Services
 @using Xellarium.Shared.DTO
+@using Xellarium.NewClient.Components
 @inject IApiAccess api
-<h3>Profile</h3>
+<h3>Профиль</h3>
 
 @if (!string.IsNullOrEmpty(errorMessage))
 {
@@ -16,21 +17,31 @@ else if (user == null)
 }
 else
 {
-    <PageTitle>@user.Name's Profile</PageTitle>
-    <p>Name: @user.Name</p>
-    <p>Role: @user.Role</p>
-    <p>Warnings: @user.WarningsCount</p>
+    <PageTitle>Профиль @user.Name</PageTitle>
+    <div class="profile-card">
+        <img src="placeholder-avatar.png" alt="Avatar" class="avatar"/>
+        <div class="profile-info">
+            <p>Имя: @user.Name</p>
+            <p>Роль: @user.Role</p>
+            <p>Предупреждения: @user.WarningsCount</p>
+        </div>
+    </div>
     @if (user.IsBlocked)
     {
-        <p style="color:red;">User is blocked</p>
+        <p style="color:red;">Пользователь заблокирован</p>
     }
-    <h4>Rules</h4>
-    <RuleList Rules="user.Rules" />
-    <NavLink class="btn btn-primary" href="/newrule">Add New Rule</NavLink>
-    <br/><br/>
-    <h4>Collections</h4>
-    <CollectionList Collections="user.Collections" />
-    <NavLink class="btn btn-primary" href="/newcollection">Add New Collection</NavLink>
+    <br/>
+    <h3 class="text-center">Мои Правила</h3>
+    <div class="relative-container">
+        <RuleList Rules="user.Rules" CardType="RuleCardType.Delete"/>
+        <NavLink class="btn btn-primary absolute-button" href="/newrule">+</NavLink>
+    </div>
+    <br/>
+    <h3 class="text-center">Мои Коллекции</h3>
+    <div class="relative-container">
+        <CollectionList Collections="user.Collections" CardType="CollectionCardType.Delete"/>
+        <NavLink class="btn btn-primary absolute-button" href="/newcollection">+</NavLink>
+    </div>
 }
 
 @code {

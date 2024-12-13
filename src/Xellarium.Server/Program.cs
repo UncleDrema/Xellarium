@@ -17,10 +17,15 @@ using Xellarium.BusinessLogic.Services;
 using Xellarium.DataAccess.Repository;
 using Xellarium.Shared;
 using Xellarium.WebApi.V1;
+using OpenTelemetry;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 namespace Xellarium.Server;
 
-public static class Program
+public static class КProgram
 {
     public static async Task Main(string[] args)
     {
@@ -79,7 +84,25 @@ public static class Program
 
         builder.Logging.ClearProviders();
         builder.Logging.AddSerilog(logger);
+        builder.Logging.AddOpenTelemetry(options =>
+        {
+            options.IncludeScopes = true;
+            options.AddConsoleExporter();
+            options.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("Xellarium"));
+        });
         builder.Host.UseSerilog(logger);
+
+        builder.Services.AddOpenTelemetry()
+            .ConfigureResource(resource => resource.AddService("Xellarium"))
+            .WithTracing(tracing => tracing
+                .AddAspNetCoreInstrumentation()
+                .AddZipkinExporter(options =>
+                {
+                    options.Endpoint = new Uri("http://localhost:9411/api/v2/spans");
+                }))
+            .WithMetrics(metrics => metrics
+                .AddAspNetCoreInstrumentation()
+                .AddConsoleExporter());
 
         // Add services to the container.
         builder.ConfigureDatabase();

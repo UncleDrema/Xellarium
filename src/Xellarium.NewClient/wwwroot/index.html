@@ -7,8 +7,9 @@
     <title>Xellarium.NewClient</title>
     <base href="/" />
     <link href="_content/Syncfusion.Blazor.Themes/material3-dark.css" rel="stylesheet" />
-    <script src="_content/Syncfusion.Blazor.Core/scripts/syncfusion-blazor.min.js" type="text/javascript"></script>
+    <script src="_content/Syncfusion.Blazor.Core/scripts/syncfusion-blazor.min.js" type="text/javascript"></script>    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400&family=Josefin+Sans:wght@400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
     <link rel="stylesheet" href="css/app.css" />
     <link rel="stylesheet" href="css/variables.css" />
@@ -31,6 +32,91 @@
         <a class="dismiss">🗙</a>
     </div>
     <script src="_framework/blazor.webassembly.js"></script>
+    <script src='_content/Blazor.Extensions.Canvas/blazor.extensions.canvas.js'></script>
+    <script>
+        function showModal() {
+            document.getElementById("modal").style.display = "block";
+        }
+        function hideModal() {
+            document.getElementById("modal").style.display = "none";
+        }
+    </script>
+    <script>
+        function argbToColor(argb) {
+            let a = (argb >> 24) & 0xFF;
+            let r = (argb >> 16) & 0xFF;
+            let g = (argb >> 8) & 0xFF;
+            let b = argb & 0xFF;
+            return "rgba(" + r + "," + g + "," + b + "," + (a / 255) + ")";
+        }
+
+        function lerpColor(a, b, amount) {
+            const ar = a >> 16,
+                ag = a >> 8 & 0xff,
+                ab = a & 0xff,
+                aa = a >> 24 & 0xff,
+                br = b >> 16,
+                bg = b >> 8 & 0xff,
+                bb = b & 0xff,
+                ba = b >> 24 & 0xff,
+                rr = ar + amount * (br - ar),
+                rg = ag + amount * (bg - ag),
+                rb = ab + amount * (bb - ab),
+                ra = aa + amount * (ba - aa);
+
+            return ((ra << 24) | (rr << 16) | (rg << 8) | rb | 0);
+        }
+
+        function render(cellSize, world, baseColorRaw, totalStates) {
+            let x;
+            let y;
+            const canvas = document.getElementById('canvasHolder').getElementsByTagName('canvas')[0];
+            const ctx = canvas.getContext('2d');
+            const width = world[0].length;
+            const height = world.length;
+
+            canvas.width = width * cellSize;
+            canvas.height = height * cellSize;
+
+            ctx.clearRect(0, 0, width * cellSize, height * cellSize);
+            ctx.fillStyle = "#003366";
+            ctx.fillRect(0, 0, width * cellSize, height * cellSize);
+
+            for (x = 0; x < width; x++) {
+                for (y = 0; y < height; y++) {
+                    const state = world[y][x];
+                    const color = lerpColor(0xFFFFFFFF, baseColorRaw, state / totalStates);
+                    ctx.fillStyle = argbToColor(color);
+                    ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                }
+            }
+
+            ctx.strokeStyle = "#000000";
+            for (let px = 0; px <= width; px++) {
+                x = px * cellSize;
+                ctx.moveTo(0.5 + x, 0);
+                ctx.lineTo(0.5 + x, height * cellSize);
+            }
+            for (let py = 0; py <= height; py++) {
+                y = py * cellSize;
+                ctx.moveTo(0, 0.5 + y);
+                ctx.lineTo(width * cellSize, 0.5 + y);
+            }
+            ctx.stroke();
+        }
+
+        window.canvasClickHandler = {
+            addClickHandler: function (canvasId, dotnetHelper) {
+                var canvas = document.getElementById(canvasId);
+                canvas.addEventListener('click', function (event) {
+                    var rect = canvas.getBoundingClientRect();
+                    var x = event.clientX - rect.left;
+                    var y = event.clientY - rect.top;
+                    dotnetHelper.invokeMethodAsync('CanvasClicked', x, y);
+                });
+            }
+        };
+    </script>
 </body>
 
 </html>

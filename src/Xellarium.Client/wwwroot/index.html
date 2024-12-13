@@ -55,51 +55,60 @@
         }
         
         function render(cellSize, world, baseColorRaw, totalStates) {
-            let x;
-            let y;
             const canvas = document.getElementById('canvasHolder').getElementsByTagName('canvas')[0];
             const ctx = canvas.getContext('2d');
-            const width = world[0].length;
-            const height = world.length;
+            const canvasWidth = canvas.width;
+            const canvasHeight = canvas.height;
 
-            canvas.width = width * cellSize;
-            canvas.height = height * cellSize;
+            const worldWidth = world[0].length;
+            const worldHeight = world.length;
 
-            ctx.clearRect(0, 0, width * cellSize, height * cellSize);
+            const adjustedCellWidth = canvasWidth / worldWidth;
+            const adjustedCellHeight = canvasHeight / worldHeight;
+
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
             ctx.fillStyle = "#003366";
-            ctx.fillRect(0, 0, width * cellSize, height * cellSize);
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-            for (x = 0; x < width; x++) {
-                for (y = 0; y < height; y++) {
+            for (let x = 0; x < worldWidth; x++) {
+                for (let y = 0; y < worldHeight; y++) {
                     const state = world[y][x];
                     const color = lerpColor(0xFFFFFFFF, baseColorRaw, state / totalStates);
                     ctx.fillStyle = argbToColor(color);
-                    ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                    ctx.fillRect(x * adjustedCellWidth, y * adjustedCellHeight, adjustedCellWidth, adjustedCellHeight);
                 }
             }
 
             ctx.strokeStyle = "#000000";
-            for (let px = 0; px <= width; px++) {
-                x = px * cellSize;
+            for (let px = 0; px <= worldWidth; px++) {
+                const x = px * adjustedCellWidth;
                 ctx.moveTo(0.5 + x, 0);
-                ctx.lineTo(0.5 + x, height * cellSize);
+                ctx.lineTo(0.5 + x, canvasHeight);
             }
-            for (let py = 0; py <= height; py++) {
-                y = py * cellSize;
+            for (let py = 0; py <= worldHeight; py++) {
+                const y = py * adjustedCellHeight;
                 ctx.moveTo(0, 0.5 + y);
-                ctx.lineTo(width * cellSize, 0.5 + y);
+                ctx.lineTo(canvasWidth, 0.5 + y);
             }
             ctx.stroke();
         }
 
         window.canvasClickHandler = {
             addClickHandler: function (canvasId, dotnetHelper) {
-                var canvas = document.getElementById(canvasId);
+                const canvas = document.getElementById(canvasId);
                 canvas.addEventListener('click', function (event) {
-                    var rect = canvas.getBoundingClientRect();
-                    var x = event.clientX - rect.left;
-                    var y = event.clientY - rect.top;
-                    dotnetHelper.invokeMethodAsync('CanvasClicked', x, y);
+                    const rect = canvas.getBoundingClientRect();
+                    const x = ((event.clientX - rect.left) / rect.width) * canvas.width;
+                    const y = ((event.clientY - rect.top) / rect.height) * canvas.height;
+
+                    // Преобразование координат в клеточные
+                    const worldWidth = dotnetHelper.invokeMethodAsync('GetWorldWidth');
+                    const worldHeight = dotnetHelper.invokeMethodAsync('GetWorldHeight');
+
+                    const cellX = Math.floor(x / (canvas.width / worldWidth));
+                    const cellY = Math.floor(y / (canvas.height / worldHeight));
+
+                    dotnetHelper.invokeMethodAsync('CanvasClicked', cellX, cellY);
                 });
             }
         };

@@ -153,7 +153,7 @@ public class ApiAccess(IHttpClientFactory httpClientFactory) : IApiAccess
 
     public async Task<AddRuleToCollectionResult> AddRuleToCollection(int collectionId, int ruleId)
     {
-        var code = await PostAsync($"collections/{collectionId}", new RuleReferenceDTO
+        var code = await PostAsync($"collections/{collectionId}/contained_rules", new RuleReferenceDTO
         {
             Id = ruleId
         });

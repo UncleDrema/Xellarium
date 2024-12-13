@@ -1,0 +1,21 @@
+.collection-card {
+    width: 20rem;
+    height: 13.75rem;
+    flex-shrink: 0;
+}
+
+.collection-card .card-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 20px;
+}
+
+.collection-card .card-title {
+    color: var(--bg-color);
+    line-height: 20px;
+    letter-spacing: 0.24px;
+    font-size: 24px;
+    vertical-align: text-top;
+    font-weight: 600;
+}

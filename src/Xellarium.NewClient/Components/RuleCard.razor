@@ -1,0 +1,128 @@
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.SplitButtons
+@using Xellarium.NewClient.Services
+@using Xellarium.Shared.DTO
+@inject NavigationManager NavigationManager
+@inject IApiAccess api
+@inject IJSRuntime JSRuntime
+
+<div class="card rule-card">
+    <div class="card-body">
+        <h5 class="card-title">@RuleName</h5>
+        <div class="d-flex justify-content-between align-items-end">
+            <SfButton CssClass="card-btn e-bigger" @onclick="OpenRule">Открыть</SfButton>
+            @if (CardType == RuleCardType.Delete)
+            {
+                <button class="delete-button e-btn e-small e-outline" @onclick="DeleteRule">
+                    <i class="fa fa-trash"></i>
+                </button>
+            }
+            else if (CardType == RuleCardType.Add)
+            {
+                <div class="dropdown">
+                    <button class="add-button e-btn e-small e-outline" @onclick="ShowModal">
+                        <i class="fa fa-plus text-bg-color"></i>
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<div id="modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close text-center" @onclick="HideModal">&times;</span>
+        <h5 class="text-bg-color text-center">Выберите коллекцию</h5>
+            @foreach (var collection in Collections)
+            {
+                <button class="e-btn e-outline e-bigger e-btn-border text-center" @onclick="() => AddRuleToCollection(collection)">@collection.Name</button>
+            }
+    </div>
+</div>
+
+@code {
+    [Parameter] public int RuleId { get; set; }
+
+    [Parameter] public string RuleName { get; set; }
+
+    [Parameter] public RuleCardType CardType { get; set; }
+
+    private List<CollectionDTO> Collections = new List<CollectionDTO>();
+    
+    // on initialized get collections
+    protected override async Task OnInitializedAsync()
+    {
+        // Логика для получения коллекций
+        var result = await api.GetCurrentUser();
+        if (result.Result != ResultCode.Ok)
+        {
+            // обработка ошибки
+        }
+        else
+        {
+            var collections = result.Response!.Collections;
+            Collections = collections;
+        }
+    }
+    
+    private void ShowModal()
+    {
+        var modal = JSRuntime.InvokeVoidAsync("showModal");
+    }
+
+    private void HideModal()
+    {
+        var modal = JSRuntime.InvokeVoidAsync("hideModal");
+    }
+
+    private void OpenRule()
+    {
+        // Логика для открытия страницы правила
+        NavigationManager.NavigateTo($"/rule/{RuleId}", true);
+    }
+
+    private void AddRule()
+    {
+        // Логика для добавления правила
+    }
+    
+    private void OnDropdownItemSelected(MenuEventArgs args)
+    {
+        // Обработка выбора коллекции
+        string selectedId = args.Item.Id;
+        Console.WriteLine($"Выбрана коллекция с ID: {selectedId}");
+    }
+
+    private async Task DeleteRule()
+    {
+        var result = await api.DeleteRule(RuleId);
+        if (result.Result != ResultCode.Ok)
+        {
+            // обработка ошибки
+            // alert
+            await JSRuntime.InvokeVoidAsync("alert", "Ошибка при удалении правила");
+        }
+        else
+        {
+            // обработка успешного удаления
+            NavigationManager.NavigateTo("/", true);
+        }
+    }
+
+    private async Task AddRuleToCollection(CollectionDTO collection)
+    {
+        var result = await api.AddRuleToCollection(collection.Id, RuleId);
+        if (result.Result != ResultCode.Ok)
+        {
+            // обработка ошибки
+            // alert
+            await JSRuntime.InvokeVoidAsync("alert", "Ошибка при добавлении правила в коллекцию");
+        }
+        else
+        {
+            // обработка успешного добавления
+            NavigationManager.NavigateTo($"/collection/{collection.Id}", true);
+        }
+    }
+
+}

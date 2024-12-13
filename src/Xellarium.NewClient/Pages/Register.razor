@@ -2,42 +2,134 @@
 @using System.ComponentModel.DataAnnotations
 @using Syncfusion.Blazor.Inputs
 @using Syncfusion.Blazor.Buttons
-<h3>Register</h3>
-<EditForm Model="@_registerModel" OnSubmit="SubmitRegister">
-    <DataAnnotationsValidator />
-    <ValidationSummary/>
-    <div class="form-group">
-        <label for="username">Username:</label>
-        <SfTextBox ID="username" @bind-Value="_registerModel.Username"></SfTextBox>
-    </div>
-    <div class="form-group">
-        <label for="password">Password:</label>
-        <SfTextBox ID="password" @bind-Value="_registerModel.Password"></SfTextBox>
-    </div>
-    <SfButton>Submit</SfButton>
-</EditForm>
+@using Xellarium.NewClient.Services
+@using Xellarium.Shared.DTO
+@using Xellarium.NewClient.Components
+@inject IJSRuntime JsRuntime
+@inject IApiAccess api
+@inject ClientAuthenticationService auth
+@inject NavigationManager NavigationManager
+
+<PageTitle>Регистрация</PageTitle>
+
+<FormContainer>
+    @if (!_isQrCodeDisplayed)
+    {
+        <h3 class="text-bg-color">Регистрация</h3>
+        <EditForm Model="@_registerModel" OnSubmit="SubmitRegister">
+            <DataAnnotationsValidator />
+            <ValidationSummary/>
+            <FormGroup>
+                <label for="username" class="text-secondary">Имя пользователя</label>
+                <SfTextBox CssClass="e-form-input" ID="username" @bind-Value="_registerModel.Username"></SfTextBox>
+            </FormGroup>
+            <FormGroup>
+                <label for="password" class="text-secondary">Пароль</label>
+                <SfTextBox CssClass="e-form-input" ID="password" @bind-Value="_registerModel.Password"></SfTextBox>
+            </FormGroup>
+            <FormGroup Centered="@true">
+                <SfButton CssClass="e-bigger">Подтвердить</SfButton>
+            </FormGroup>
+        </EditForm>
+    }
+    else
+    {
+        <h4 class="text-bg-color">Отсканируйте QR-код с помощью приложения для аутентификации</h4>
+        <img src="https://api.qrserver.com/v1/create-qr-code/?data=@qrUri&size=150x150" class="qr-code" alt="QR Code for 2FA" />
+        <EditForm Model="@_twoFactorModel" OnSubmit="CompleteRegistration">
+            <DataAnnotationsValidator />
+            <ValidationSummary/>
+            <FormGroup>
+                <label for="code" class="text-secondary">Код подтверждения</label>
+                <SfTextBox CssClass="e-form-input" ID="code" @bind-Value="_twoFactorModel.TwoFactorCode"></SfTextBox>
+            </FormGroup>
+            <FormGroup Centered="@true">
+                <SfButton CssClass="e-bigger">Завершить регистрацию</SfButton>
+            </FormGroup>
+        </EditForm>
+        <FormGroup Centered="@true">
+            <SfButton CssClass="e-outline skip-button text-secondary" OnClick="SkipTwoFactor">Пропустить</SfButton>
+        </FormGroup>
+    }
+</FormContainer>
 
 @code {
     private readonly RegisterModel _registerModel = new RegisterModel();
+    private readonly TwoFactorModel _twoFactorModel = new TwoFactorModel();
+    private bool _isQrCodeDisplayed = false;
+    private string qrUri = string.Empty;
+    private RegisteredUserDTO? _registeredUserDto;
 
     public class RegisterModel
     {
-        [Required]
-        public string Username { get; set; }
-        [Required]
-        public string Password { get; set; }
+        [Required] public string Username { get; set; }
+        [Required] public string Password { get; set; }
     }
 
-    private void SubmitRegister(EditContext context)
+    public class TwoFactorModel
+    {
+        public string TwoFactorCode { get; set; }
+    }
+
+    private async Task SubmitRegister(EditContext context)
     {
         bool isValid = context.Validate();
         if (isValid)
         {
-            Console.WriteLine("Valid");
+            var registerResult = await api.Register(new UserRegisterDTO
+            {
+                Username = _registerModel.Username,
+                Password = _registerModel.Password
+            });
+
+            if (registerResult.Result != ResultCode.Ok)
+            {
+                await JsRuntime.InvokeVoidAsync("alert", "Пользователь с такими именем и паролем уже существует");
+            }
+            else
+            {
+                var response = registerResult.Response!;
+                qrUri = response.TwoFactorQrCodeUri;
+                _isQrCodeDisplayed = true;
+                _registeredUserDto = response;
+            }
         }
         else
         {
             Console.WriteLine("Invalid");
         }
     }
+
+    private async Task CompleteRegistration(EditContext context)
+    {
+        bool isValid = context.Validate();
+        if (isValid)
+        {
+            var result = await api.Verify2Fa(new VerifyTwoFactorRequestDTO()
+            {
+                UserName = _registerModel.Username,
+                Code = _twoFactorModel.TwoFactorCode
+            });
+
+            if (result.Result != ResultCode.Ok)
+            {
+                await JsRuntime.InvokeVoidAsync("alert", "Неправильный код двухфакторной аутентификации");
+            }
+            else
+            {
+                await auth.AuthenticateWithToken(_registeredUserDto!.Token);
+                NavigationManager.NavigateTo("/", true);
+            }
+        }
+        else
+        {
+            Console.WriteLine("Invalid 2FA Code");
+        }
+    }
+
+    private async Task SkipTwoFactor()
+    {
+        await JsRuntime.InvokeVoidAsync("alert", "Пропуск привязки двухфакторной аутентификации невозможен");
+    }
+
 }

@@ -1,6 +1,6 @@
 @page "/login"
 @using System.ComponentModel.DataAnnotations
-@using Blazored.LocalStorage
+@using Xellarium.NewClient.Components
 @using Syncfusion.Blazor.Inputs
 @using Syncfusion.Blazor.Buttons
 @using Xellarium.NewClient.Services
@@ -8,27 +8,52 @@
 @inject IApiAccess api
 @inject ClientAuthenticationService auth
 @inject NavigationManager navigationManager
-<h3>Login</h3>
-<EditForm Model="@_loginModel" OnSubmit="SubmitLogin">
-    <DataAnnotationsValidator />
-    <ValidationSummary/>
-    <div class="form-group">
-        <label for="username">Username:</label>
-        <SfTextBox ID="username" @bind-Value="_loginModel.Username"></SfTextBox>
-    </div>
-    <div class="form-group">
-        <label for="password">Password:</label>
-        <SfTextBox ID="password" @bind-Value="_loginModel.Password"></SfTextBox>
-    </div>
-    <div class="form-group">
-        <label for="2fa-code">2FA code:</label>
-        <SfTextBox ID="2fa-code" @bind-Value="_loginModel.TwoFactorCode"></SfTextBox>
-    </div>
-    <SfButton>Submit</SfButton>
-</EditForm>
+@inject IJSRuntime JsRuntime
+
+<PageTitle>Вход</PageTitle>
+
+<FormContainer>
+    @if (!_isTwoFactorDisplayed)
+    {
+    <h3 class="text-bg-color">Вход</h3>
+    <EditForm Model="@_loginModel" OnSubmit="SubmitLogin">
+        <DataAnnotationsValidator />
+        <ValidationSummary/>
+        <FormGroup>
+            <label for="username" class="text-secondary">Имя пользователя</label>
+            <SfTextBox CssClass="e-form-input" ID="username" @bind-Value="_loginModel.Username"></SfTextBox>
+        </FormGroup>
+        <FormGroup>
+            <label for="password" class="text-secondary">Пароль</label>
+            <SfTextBox CssClass="e-form-input" ID="password" @bind-Value="_loginModel.Password"></SfTextBox>
+        </FormGroup>
+        <FormGroup Centered="@true">
+            <SfButton CssClass="e-bigger">Подтвердить</SfButton>
+        </FormGroup>
+    </EditForm>
+    }
+    else
+    {
+    <h4 class="text-bg-color text-center">Войдите в приложение для аутентификации</h4>
+    <h5 class="text-bg-color text-center">Введите код в поле ниже</h5>
+    <EditForm Model="@_twoFactorModel" OnSubmit="CompleteLogin">
+        <DataAnnotationsValidator />
+        <ValidationSummary/>
+        <FormGroup>
+            <label for="code" class="text-secondary">Код подтверждения</label>
+            <SfTextBox CssClass="e-form-input" ID="code" @bind-Value="_twoFactorModel.TwoFactorCode"></SfTextBox>
+        </FormGroup>
+        <FormGroup Centered="@true">
+            <SfButton CssClass="e-bigger">Подтвердить</SfButton>
+        </FormGroup>
+    </EditForm>
+    }
+</FormContainer>
 
 @code {
     private readonly LoginModel _loginModel = new LoginModel();
+    private readonly TwoFactorModel _twoFactorModel = new TwoFactorModel();
+    private bool _isTwoFactorDisplayed = false;
     
     public class LoginModel
     {
@@ -36,11 +61,27 @@
         public string Username { get; set; }
         [Required]
         public string Password { get; set; }
-        
-        public string? TwoFactorCode { get; set; }
+    }
+    
+    public class TwoFactorModel
+    {
+        public string TwoFactorCode { get; set; }
     }
 
     private async Task SubmitLogin(EditContext context)
+    {
+        bool isValid = context.Validate();
+        if (isValid)
+        {
+            _isTwoFactorDisplayed = true;
+        }
+        else
+        {
+            Console.WriteLine("Invalid form");
+        }
+    }
+    
+    private async Task CompleteLogin(EditContext context)
     {
         bool isValid = context.Validate();
         if (isValid)
@@ -49,7 +90,7 @@
             {
                 Username = _loginModel.Username,
                 Password = _loginModel.Password,
-                TwoFactorCode = _loginModel.TwoFactorCode
+                TwoFactorCode = _twoFactorModel.TwoFactorCode
             });
             if (loginResult.Result is ResultCode.Ok && loginResult.Response is not null)
             {
@@ -59,6 +100,11 @@
             else
             {
                 Console.WriteLine($"Result code invalid: {loginResult.Result}");
+                _isTwoFactorDisplayed = false;
+                _twoFactorModel.TwoFactorCode = string.Empty;
+                _loginModel.Password = string.Empty;
+                
+                await JsRuntime.InvokeVoidAsync("alert", "Неправильные данные авторизации!");
             }
         }
         else

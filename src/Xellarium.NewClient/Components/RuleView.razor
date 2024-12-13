@@ -1,0 +1,271 @@
+@using System.ComponentModel.DataAnnotations
+@using System.Drawing
+@using System.Text
+@using Blazor.Extensions.Canvas.Canvas2D
+@using Blazor.Extensions.Canvas
+@using Blazor.Extensions
+@using Xellarium.NewClient.Services
+@using Xellarium.Shared
+@using Xellarium.Shared.DTO
+@using Syncfusion.Blazor.Buttons
+@inject IJSRuntime JsRuntime
+@inject IApiAccess api
+
+@if (Rule is not null)
+{
+<div class="layout-container">
+    <div class="controls-container">
+        <EditForm Model="settings">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <FormGroup>
+                <label for="cellSize">Размер ячейки</label>
+                <InputNumber id="cellSize" class="form-control limited-form" @bind-Value="settings.CellSize" />
+            </FormGroup>
+
+            <FormGroup>
+                <label for="worldWidth">Ширина мира</label>
+                <InputNumber id="worldWidth" class="form-control limited-form" @bind-Value="settings.WorldWidth" />
+            </FormGroup>
+
+            <FormGroup>
+                <label for="worldHeight">Высота мира</label>
+                <InputNumber id="worldHeight" class="form-control limited-form" @bind-Value="settings.WorldHeight" />
+            </FormGroup>
+
+            <FormGroup>
+                <label for="timerDelay">Задержка</label>
+                <InputNumber id="timerDelay" class="form-control limited-form" @bind-Value="settings.TimerDelay" />
+            </FormGroup>
+
+            <FormGroup>
+                <label for="baseColor">Цвет</label>
+                <InputText id="baseColor" class="form-control limited-form" @bind-Value="settings.BaseColor" />
+            </FormGroup>
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger" role="alert">
+                    @errorMessage
+                </div>
+            }
+        </EditForm>
+        
+        <div class="buttons-container">
+            <SfButton @onclick="Randomize" CssClass="e-bigger e-btn-border" Content="Случайный" />
+            <SfButton @onclick="Clear" CssClass="e-bigger e-btn-border" Content="Очистить" />
+            <SfButton @onclick="MakeStep" CssClass="e-bigger e-btn-border" Content="Шаг" />
+            <SfButton @onclick="() => StartRender(settings.TimerDelay)" CssClass="e-bigger e-btn-border" Content="Старт" />
+            <SfButton @onclick="StopRender" CssClass="e-bigger e-btn-border" Content="Стоп" />
+        </div>
+
+        <textarea class="transitions-info" readonly>@transitionsInfo</textarea>
+    </div>
+
+    <div id="canvasHolder" class="canvas-container">
+        <BECanvas @ref="CanvasRef"></BECanvas>
+    </div>
+</div>
+}
+
+@code{
+    private string errorMessage = string.Empty;
+    private string transitionsInfo = string.Empty;
+    
+    public class WorldSettings
+    {
+        [Range(1, 16)]
+        public int CellSize { get; set; } = 16;
+        [Range(1, 100)]
+        public int WorldWidth { get; set; } = 50;
+        [Range(1, 100)]
+        public int WorldHeight { get; set; } = 50;
+        [Range(100, 1000)]
+        public int TimerDelay { get; set; } = 500;
+        public string BaseColor { get; set; } = $"#{Random.Shared.Next(0xFFFFFF):X6}";
+    }
+    
+    private WorldSettings settings = new WorldSettings();
+    
+    [Parameter]
+    public RuleDTO? Rule { get; set; }
+    public NeighborhoodDTO Neighborhood { get; set; } = new NeighborhoodDTO();
+    private World World = new World(0, 0);
+    
+    private Canvas2DContext ctx;
+    protected BECanvasComponent CanvasRef;
+    private Timer? renderTimer;
+    private bool rendered = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Rule is not null && !rendered)
+        {
+            ctx = await CanvasRef.CreateCanvas2DAsync();
+            await JsRuntime.InvokeVoidAsync("canvasClickHandler.addClickHandler", "canvasHolder", DotNetObjectReference.Create(this));
+            await Clear();
+        }
+        await base.OnInitializedAsync();
+    }
+    
+    protected override async Task OnInitializedAsync()
+    {
+        // set transitions info
+        if (Rule is not null)
+        {
+            transitionsInfo = GetTransitionInfo(Rule.GenericRule);
+        }
+    }
+
+    private string GetTransitionInfo(GenericRule rule)
+    {
+        var sb = new StringBuilder();
+        for (int state = 0; state < rule.StatesCount; state++)
+        {
+            sb.AppendFormat("Из состояния {0}:\n", state);
+            foreach (var transition in rule.StateTransitions[state])
+            {
+                if (transition.RequiredNeighbours.Count > 0)
+                {
+                    sb.AppendFormat("  Переход в состояние {0} при соседях: ", transition.TargetState);
+                    foreach (var (neighbor, neighborAmounts) in transition.RequiredNeighbours)
+                    {
+                        var amountsStringJoined = string.Join(", ", neighborAmounts);
+                        sb.AppendFormat("{0} в количестве {1}; ", neighbor, amountsStringJoined);
+                    }
+
+                    sb.Append("\n");
+                }
+                else
+                {
+                    sb.AppendFormat("  Переход в состояние {0} без условий\n", transition.TargetState);
+                }
+            }
+        }
+        return sb.ToString();
+    }
+
+    private async Task Clear()
+    {
+        if (Rule is null)
+            return;
+        CreateWorld();
+        await Render();
+    }
+
+    private void CreateWorld()
+    {
+        World = new World(settings.WorldWidth, settings.WorldHeight);
+        for (int x = 0; x < World.Width; x++)
+        {
+            for (int y = 0; y < World.Height; y++)
+            {
+                World[(x, y)] = 0;
+            }
+        }
+    }
+    
+    [JSInvokable]
+    public async Task CanvasClicked(double x, double y)
+    {
+        if (Rule is null)
+            return;
+        int cellX = (int)(x / settings.CellSize);
+        int cellY = (int)(y / settings.CellSize);
+        World[(cellX, cellY)] = (World[(cellX, cellY)] + 1) % Rule.GenericRule.StatesCount;
+        await Render();
+    }
+
+    private async Task Randomize()
+    {
+        if (Rule is null)
+            return;
+        settings.BaseColor = $"#{Random.Shared.Next(0xFFFFFF):X6}";
+        var states = Rule.GenericRule.StatesCount;
+        CreateWorld();
+        for (int x = 0; x < World.Width; x++)
+        {
+            for (int y = 0; y < World.Height; y++)
+            {
+                World[(x, y)] = Random.Shared.Next(states);
+            }
+        }
+
+        await Render();
+    }
+
+    private async Task MakeStep()
+    {
+        if (Rule is null)
+            return;
+        if (Rule.NeighborhoodId != Neighborhood.Id)
+        {
+            var (result, neighborhood) = await api.GetNeighborhood(Rule.NeighborhoodId);
+            if (result == ResultCode.Ok)
+            {
+                Neighborhood = neighborhood!;
+            }
+            else
+            {
+                errorMessage = "Failed to get neighborhood";
+                return;
+            }
+        }
+        World = Rule.GenericRule.NextState(World, Neighborhood.Offsets);
+        await Render();
+    }
+
+    private void StartRender(int delay)
+    {
+        if (renderTimer != null)
+        {
+            // Если отрисовка уже запущена, ничего не делаем
+            return;
+        }
+
+        renderTimer = new Timer(async _ =>
+        {
+            await MakeStep();
+        }, null, TimeSpan.Zero, TimeSpan.FromMilliseconds(delay));
+    }
+
+    private void StopRender()
+    {
+        if (renderTimer != null)
+        {
+            renderTimer.Dispose();
+            renderTimer = null;
+        }
+    }
+
+    public async Task Render()
+    {
+        if (Rule is null)
+            return;
+        rendered = true;
+        var worldArray = new int[World.Height][];
+        for (int y = 0; y < World.Height; y++)
+        {
+            worldArray[y] = new int[World.Width];
+            for (int x = 0; x < World.Width; x++)
+            {
+                worldArray[y][x] = World[(x, y)];
+            }
+        }
+
+        Color baseColor;
+        try
+        {
+            baseColor = ColorTranslator.FromHtml(settings.BaseColor);
+        }
+        catch (Exception e)
+        {
+            errorMessage = "Invalid color";
+            return;
+        }
+
+        errorMessage = string.Empty;
+        await JsRuntime.InvokeVoidAsync("render", settings.CellSize, worldArray, baseColor.ToArgb(), Rule.GenericRule.StatesCount);
+    }
+}

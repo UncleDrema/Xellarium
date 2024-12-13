@@ -1,0 +1,295 @@
+@page "/newrule"
+@using System.ComponentModel.DataAnnotations
+@using Blazored.LocalStorage
+@using Xellarium.NewClient.Components
+@using Xellarium.NewClient.Services
+@using Xellarium.Shared.DTO
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.QueryBuilder
+@using Syncfusion.Blazor.DropDowns
+@using Xellarium.Shared
+@inject NavigationManager Navigation
+@inject IApiAccess api
+@inject IJSRuntime JsRuntime
+@inject ILocalStorageService localStorage
+
+<PageTitle>Новая коллекция</PageTitle>
+
+@if (Collections == null || Neighborhoods == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <FormContainer>
+        <h3 class="text-bg-color">Новое правило</h3>
+        <EditForm Model="_ruleModel" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator/>
+            <ValidationSummary/>
+
+            <FormGroup>
+                <label for="name" class="text-secondary">Название</label>
+                <SfTextBox CssClass="e-form-input" ID="name" @bind-Value="_ruleModel.Name"></SfTextBox>
+            </FormGroup>
+
+            <FormGroup>
+                <label for="collection" class="text-secondary">Коллекция</label>
+                <InputSelect id="collection" class="form-control e-input-group" @bind-Value="_ruleModel.CollectionId">
+                    @foreach (var collection in Collections)
+                    {
+                    <option value="@collection.Id">@collection.Name</option>
+                    }
+                </InputSelect>
+            </FormGroup>
+
+            <FormGroup>
+                <label for="stateCount" class="text-secondary">Количество состояний</label>
+                <SfNumericTextBox TValue="int" CssClass="e-form-input" ID="stateCount" @bind-Value="_ruleModel.StateCount"
+                                  ShowSpinButton="@false" Min="2" Max="100" Step="1"></SfNumericTextBox>
+            </FormGroup>
+
+            <FormGroup>
+                <label for="neighborhood" class="text-secondary">Тип окрестности</label>
+                <InputSelect id="neighborhood" class="form-control e-input-group" @bind-Value="_ruleModel.NeighborhoodId">
+                    @foreach (var neighborhood in Neighborhoods)
+                    {
+                        <option value="@neighborhood.Id">@neighborhood.Name (@neighborhood.Id)</option>
+                    }
+                </InputSelect>
+            </FormGroup>
+
+            @for (int i = 0; i < _ruleModel.Transitions.Count; i++)
+            {
+                var ind = i;
+                var transition = _ruleModel.Transitions[ind];
+                <FormGroup>
+                    <label class="text-bg-color">Переход @(ind + 1)</label>
+                    <div class="row">
+                        <div class="col-sm">
+                            <label class="text-bg-color">Из</label>
+                            <InputNumber class="form-control" @bind-Value="transition.FromState" min="0" max="@(_ruleModel.StateCount-1)" step="1"/>
+                        </div>
+                        <div class="col-sm">
+                            <label class="text-bg-color">В</label>
+                            <InputNumber class="form-control" @bind-Value="transition.ToState" min="0" max="@(_ruleModel.StateCount-1)" step="1"/>
+                        </div>
+                        <div class="col-sm">
+                            <div>
+                                <label class="text-bg-color">Всегда</label>
+                            </div>
+                            <div>
+                                <InputCheckbox @bind-Value="transition.Always"/>
+                            </div>
+                        </div>
+                        @if (!transition.Always)
+                        {
+                        <div class="col-sm">
+                            <label class="text-bg-color">Состояние соседа</label>
+                            <InputNumber class="form-control" @bind-Value="transition.NeighbourState" min="0" max="@(_ruleModel.StateCount-1)" step="1"/>
+                        </div>
+                        <div class="col-sm">
+                            <label class="text-bg-color">Кол-во</label>
+                            <InputNumber class="form-control" @bind-Value="transition.Count" min="0" step="1"/>
+                        </div>
+                        }
+                        <button class="col" type="button" @onclick="() => RemoveTransition(ind)">Удалить переход</button>
+                    </div>
+                </FormGroup>
+            }
+
+            <FormGroup>
+                <SfButton CssClass="e-bigger e-outline add-transition-button" type="button" @onclick="AddTransition">Добавить переход</SfButton>
+            </FormGroup>
+
+            <FormGroup Centered="@true">
+                <SfButton CssClass="e-bigger">Создать</SfButton>
+            </FormGroup>
+        </EditForm>
+    </FormContainer>
+}
+
+
+@code {
+    private const string LocalStorageKey = "NewRuleFormData";
+    private Timer? _saveTimer;
+    
+    private EditContext editContext;
+    public CollectionDTO[]? Collections;
+    public NeighborhoodDTO[]? Neighborhoods;
+    private NewRuleModel _ruleModel = new NewRuleModel();
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadFormDataFromLocalStorage();
+        _saveTimer = new Timer(SaveFormDataToLocalStorage, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
+        
+        {
+            var (result, user) = await api.GetCurrentUser();
+            if (result == ResultCode.Ok && user != null)
+            {
+                Collections = user.Collections.ToArray();
+            }
+        }
+        {
+            var (result, neighborhoods) = await api.GetNeighborhoods();
+            if (result == ResultCode.Ok)
+            {
+                Neighborhoods = neighborhoods;
+            }
+        }
+        editContext = new EditContext(_ruleModel);
+    }
+    
+    private async Task LoadFormDataFromLocalStorage()
+    {
+        var formData = await localStorage.GetItemAsync<NewRuleModel>(LocalStorageKey);
+        if (formData != null)
+        {
+            _ruleModel = formData;
+        }
+    }
+
+    private async void SaveFormDataToLocalStorage(object? state)
+    {
+        await localStorage.SetItemAsync(LocalStorageKey, _ruleModel);
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        var genericRule = BuildGenericRuleOrFail();
+        if (genericRule is null)
+        {
+            return;
+        }
+
+        var result = await api.AddNewRuleToCollection(_ruleModel.CollectionId,
+            new PostRuleDTO
+            {
+                GenericRule = genericRule,
+                NeighborhoodId = _ruleModel.NeighborhoodId,
+                Name = _ruleModel.Name
+            });
+
+        if (result.Result != ResultCode.Ok)
+        {
+            await JsRuntime.InvokeVoidAsync("alert", "Ошибка при создании правила");
+        }
+        else
+        {
+            await _saveTimer.DisposeAsync();
+            _saveTimer = null;
+            await localStorage.RemoveItemAsync(LocalStorageKey);
+            Navigation.NavigateTo($"/collection/{_ruleModel.CollectionId}");
+        }
+    }
+    
+    private void AddTransition()
+    {
+        _ruleModel.Transitions.Add(new NewRuleModel.TransitionDto());
+    }
+
+    private void RemoveTransition(int index)
+    {
+        _ruleModel.Transitions.RemoveAt(index);
+    }
+    
+    private GenericRule? BuildGenericRuleOrFail()
+        {
+            try
+            {
+                return BuildGenericRule();
+            }
+            catch (Exception e)
+            {
+                JsRuntime.InvokeVoidAsync("alert", $"Ошибка создания правила: {e.Message}");
+                return null;
+            }
+        }
+
+        private GenericRule BuildGenericRule()
+        {
+            var ruleBuilder = new GenericRule.Builder(_ruleModel.StateCount);
+            var transitions = new Dictionary<int, Dictionary<int, Dictionary<int, IList<int>>>>();
+            foreach (var transition in _ruleModel.Transitions)
+            {
+                if (!transitions.ContainsKey(transition.FromState))
+                {
+                    transitions[transition.FromState] = new Dictionary<int, Dictionary<int, IList<int>>>();
+                }
+            
+                var fromTransitions = transitions[transition.FromState];
+                if (!fromTransitions.ContainsKey(transition.ToState))
+                {
+                    fromTransitions[transition.ToState] = new Dictionary<int, IList<int>>();
+                }
+                var toTransitions = fromTransitions[transition.ToState];
+                if (!toTransitions.ContainsKey(transition.NeighbourState))
+                {
+                    toTransitions[transition.NeighbourState] = new List<int>();
+                }
+                toTransitions[transition.NeighbourState].Add(transition.Count);
+            }
+
+            foreach (var transition in _ruleModel.Transitions)
+            {
+                if (transition.Always)
+                {
+                    transitions[transition.FromState][transition.ToState] = new Dictionary<int, IList<int>>();
+                }
+            }
+
+            foreach (var (fromState, toTransitions) in transitions)
+            {
+                foreach (var (toState, neighbourCounts) in toTransitions)
+                {
+                    ruleBuilder.WithTransition(fromState, toState, neighbourCounts);
+                }
+            }
+
+            return ruleBuilder.Build();
+        }
+
+    public class NewRuleModel
+    {
+        [MinLength(3)]
+        public string Name { get; set; } = "";
+        [IdValidation("Collection")]
+        public int CollectionId { get; set; } = 0;
+        [Range(2, int.MaxValue)]
+        public int StateCount { get; set; } = 2;
+        [IdValidation("Neighborhood")]
+        public int NeighborhoodId { get; set; } = 0;
+        public List<TransitionDto> Transitions { get; set; } = new List<TransitionDto>();
+
+        
+        private class IdValidationAttribute : ValidationAttribute
+        {
+            private readonly string _targetName;
+
+            public IdValidationAttribute(string targetName)
+            {
+                _targetName = targetName;
+            }
+            
+            protected override ValidationResult? IsValid(object value, ValidationContext validationContext)
+            {
+                if (value is int id && id > 0)
+                {
+                    return ValidationResult.Success;
+                }
+                return new ValidationResult($"{_targetName} not selected");
+            }
+        }
+        
+        
+        public class TransitionDto
+        {
+            public int FromState { get; set; }
+            public int ToState { get; set; }
+            public int NeighbourState { get; set; }
+            public int Count { get; set; }
+            public bool Always { get; set; }
+        }
+    }
+}

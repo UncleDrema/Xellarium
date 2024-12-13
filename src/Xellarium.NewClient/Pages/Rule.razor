@@ -1,6 +1,44 @@
 @page "/rule/{ruleId}"
-<h3>Rule</h3>
+@using Xellarium.NewClient.Services
+@using Xellarium.Shared.DTO
+@using Xellarium.NewClient.Components
+@inject NavigationManager NavigationManager
+@inject IApiAccess api
+
+@if (displayRule == null)
+{
+<p><em>Loading...</em></p>
+}
+else
+{
+    <PageTitle>@displayRule.Name</PageTitle>
+    <h2 class="text-center rule-title">@displayRule.Name</h2>
+    <RuleView Rule="displayRule"/>
+}
 
 @code {
-    
+    [Parameter]
+    public string RuleId { get; set; }
+
+    private RuleDTO? displayRule;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!int.TryParse(RuleId, out var ruleId))
+        {
+            NavigationManager.NavigateTo("/");
+        }
+        var (result, rule) = await api.GetRule(ruleId);
+        if (result == ResultCode.Ok)
+        {
+            if (rule != null)
+            {
+                displayRule = rule;
+            }
+            else
+            {
+                NavigationManager.NavigateTo("/");
+            }
+        }
+    }
 }

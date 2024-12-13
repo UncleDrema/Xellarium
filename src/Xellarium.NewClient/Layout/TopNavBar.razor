@@ -26,11 +26,11 @@
     <div class="auth-buttons">
         <AuthorizeView>
             <Authorized>
-                <SfButton CssClass="e-bigger" @onclick="Logout">Выйти</SfButton>
+                <SfButton CssClass="e-bigger e-btn-border" @onclick="Logout">Выйти</SfButton>
             </Authorized>
             <NotAuthorized>
-                <SfButton CssClass="e-bigger" @onclick="NavigateToLogin">Войти</SfButton>
-                <SfButton CssClass="e-bigger" @onclick="NavigateToRegister">Регистрация</SfButton>
+                <SfButton CssClass="e-bigger e-btn-border" @onclick="NavigateToLogin">Войти</SfButton>
+                <SfButton CssClass="e-bigger e-btn-border" @onclick="NavigateToRegister">Регистрация</SfButton>
             </NotAuthorized>
         </AuthorizeView>
     </div>

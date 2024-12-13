@@ -1,0 +1,15 @@
+@using Xellarium.Shared.DTO
+<div class="cards-scroll-list">
+    @foreach (var rule in Collections)
+    {
+        <CollectionCard CollectionId="@rule.Id" CollectionName="@rule.Name" CardType="@CardType" />
+    }
+</div>
+
+@code {
+    [Parameter]
+    public List<CollectionDTO> Collections { get; set; } = new List<CollectionDTO>();
+    
+    [Parameter]
+    public CollectionCardType CardType { get; set; } 
+}

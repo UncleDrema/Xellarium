@@ -14,7 +14,7 @@ public class CollectionRepository(XellariumContext context, ILogger logger)
         return await _context.Collections
             .Where(e => !e.IsDeleted)
             .Include(col => col.Owner)
-            .Include(col => col.Rules)
+            .Include(col => col.Rules.Where(e => !e.IsDeleted))
             .Where(col => !col.IsPrivate || col.Owner.Id == userId)
             .ToListAsync();
     }
@@ -24,7 +24,7 @@ public class CollectionRepository(XellariumContext context, ILogger logger)
         return await _context.Collections
             .Where(e => !e.IsDeleted)
             .Include(col => col.Owner)
-            .Include(col => col.Rules)
+            .Include(col => col.Rules.Where(e => !e.IsDeleted))
             .Where(col => !col.IsPrivate)
             .ToListAsync();
     }
@@ -34,14 +34,14 @@ public class CollectionRepository(XellariumContext context, ILogger logger)
         return await _context.Collections
             .Where(e => !e.IsDeleted)
             .Include(col => col.Owner)
-            .Include(col => col.Rules)
+            .Include(col => col.Rules.Where(e => !e.IsDeleted))
             .ToListAsync();
     }
     
     public async Task<IEnumerable<Collection>> GetAllByIdsInclude(IEnumerable<int> ids)
     {
         return await _context.Collections.Include(col => col.Owner)
-            .Include(col => col.Rules)
+            .Include(col => col.Rules.Where(e => !e.IsDeleted))
             .Where(col => ids.Contains(col.Id))
             .ToListAsync();
     }
@@ -49,7 +49,7 @@ public class CollectionRepository(XellariumContext context, ILogger logger)
     public async Task<Collection?> GetInclude(int id)
     {
         return await _context.Collections.Include(col => col.Owner)
-            .Include(col => col.Rules)
+            .Include(col => col.Rules.Where(e => !e.IsDeleted))
             .FirstOrDefaultAsync(col => col.Id == id);
     }
 }

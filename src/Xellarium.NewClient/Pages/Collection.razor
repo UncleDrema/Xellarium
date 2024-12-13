@@ -1,0 +1,73 @@
+@page "/collection/{collectionId}"
+@using Xellarium.NewClient.Services
+@using Xellarium.Shared.DTO
+@using Xellarium.NewClient.Components
+@inject IApiAccess api
+@inject NavigationManager NavigationManager
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+<div class="alert alert-danger mt-3" role="alert">
+    @errorMessage
+</div>
+}
+else if (collection == null || rules == null)
+{
+<p><em>Loading...</em></p>
+}
+else
+{
+<PageTitle>@collection.Name</PageTitle>
+<h2 class="text-center collection-title">@collection.Name</h2>
+<CardGrid>
+    @foreach (var rule in rules)
+    {
+        <RuleCard CardType="@RuleCardType.Add" RuleId="@rule.Id" RuleName="@rule.Name" />
+    }
+</CardGrid>
+}
+
+@code {
+    [Parameter]
+    public string CollectionId { get; set; }
+    
+    public string errorMessage = string.Empty;
+    private CollectionDTO? collection;
+    private RuleDTO[]? rules;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!int.TryParse(CollectionId, out var collectionId))
+        {
+            errorMessage = "Invalid collection id";
+            return;
+        }
+        
+        var (result, coll) = await api.GetCollection(collectionId);
+        if (result == ResultCode.Ok && coll != null)
+        {
+            collection = coll;
+            var (ruleResult, ruleReferences) = await api.GetCollectionRules(collectionId);
+            if (ruleResult == ResultCode.Ok && ruleReferences != null)
+            {
+                var ruleList = new List<RuleDTO>();
+                foreach (var ruleRef in ruleReferences)
+                {
+                    var (ruleGetResultCode, rule) = await api.GetRule(ruleRef.Id);
+                    ruleList.Add(rule);
+                }
+                rules = ruleList.ToArray();
+                errorMessage = string.Empty;
+            }
+            else
+            {
+                errorMessage = "Failed to get collection rules";
+            }
+        }
+        else
+        {
+            errorMessage = "Failed to get collection";
+        }
+    }
+
+}

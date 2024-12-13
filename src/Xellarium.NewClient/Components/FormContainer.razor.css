@@ -1,0 +1,25 @@
+.form-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3.75rem 6.125rem;
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 0 0.625rem rgba(0, 0, 0, 0.1);
+    max-width: 44rem;
+    margin: 10rem auto;
+    margin-top: 5rem;
+}
+
+.form-container h3 {
+    font-size: 2rem;
+    line-height: 1.125rem;
+    text-align: center;
+}
+
+.form-container h4 {
+    font-size: 1.25rem;
+    line-height: 1.5rem;
+    text-align: center;
+}

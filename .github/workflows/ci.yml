@@ -11,6 +11,12 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    
+    services:
+      zipkin:
+        image: openzipkin/zipkin
+        ports:
+          - 9411:9411
 
     steps:
       - name: Checkout code
@@ -87,6 +93,15 @@ jobs:
         with:
           name: allure-results
           path: ./allure-results
+          
+      - name: Save Zipkin traces
+        run: docker cp zipkin:/zipkin-data ./zipkin-data
+
+      - name: Upload Zipkin traces as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: zipkin-traces
+          path: ./zipkin-data
 
       - name: Clean up
         if: success() || failure()

@@ -1,0 +1,20 @@
+@if (Centered)
+{
+    <div class="form-group text-center">
+        @ChildContent
+    </div>
+}
+else
+{
+    <div class="form-group">
+        @ChildContent
+    </div>
+}
+
+@code {
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+    
+    [Parameter]
+    public bool Centered { get; set; }
+}

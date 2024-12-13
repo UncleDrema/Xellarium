@@ -1,0 +1,69 @@
+@page "/newcollection"
+@using System.ComponentModel.DataAnnotations
+@using Xellarium.NewClient.Components
+@using Xellarium.NewClient.Services
+@using Xellarium.Shared.DTO
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Inputs
+@inject NavigationManager Navigation
+@inject IApiAccess api
+@inject IJSRuntime JsRuntime
+
+<PageTitle>Новая коллекция</PageTitle>
+<FormContainer>
+    <h3 class="text-bg-color">Новая коллекция</h3>
+    <EditForm Model="@_collectionModel" OnSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <FormGroup>
+            <label for="name" class="text-secondary">Название</label>
+            <SfTextBox CssClass="e-form-input" ID="name" @bind-Value="_collectionModel.Name"></SfTextBox>
+        </FormGroup>
+
+        <FormGroup>
+            <SfCheckBox CssClass="e-bigger" Label="Приватная" ID="isPrivate" @bind-Checked="_collectionModel.IsPrivate"></SfCheckBox>
+        </FormGroup>
+        
+        <FormGroup Centered="@true">
+            <SfButton CssClass="e-bigger">Создать</SfButton>
+        </FormGroup>
+    </EditForm>
+</FormContainer>
+
+@code {
+    private NewCollectionModel _collectionModel = new NewCollectionModel();
+
+    private async Task HandleValidSubmit(EditContext context)
+    {
+        if (context.Validate())
+        {
+            var result = await api.AddCollection(new PostCollectionDTO
+            {
+                Name = _collectionModel.Name,
+                IsPrivate = _collectionModel.IsPrivate
+            });
+
+            if (result.Result != ResultCode.Ok)
+            {
+                await JsRuntime.InvokeVoidAsync("alert", "Ошибка при создании коллекции");
+            }
+            else
+            {
+                Navigation.NavigateTo("/profile");
+            }
+        }
+        else
+        {
+            Console.WriteLine("Validation failed");
+        }
+    }
+
+    public class NewCollectionModel
+    {
+        [Required]
+        public string Name { get; set; }
+        [Required]
+        public bool IsPrivate { get; set; }
+    }
+}

@@ -1,0 +1,52 @@
+@using Syncfusion.Blazor.Buttons
+@using Xellarium.NewClient.Services
+@inject NavigationManager NavigationManager
+@inject IApiAccess api
+@inject IJSRuntime JSRuntime
+
+<div class="card collection-card">
+    <div class="card-body">
+        <h5 class="card-title">@CollectionName</h5>
+        <div class="d-flex justify-content-between align-items-end">
+            @if (CardType == CollectionCardType.Open)
+            {
+                <SfButton CssClass="card-btn e-bigger" @onclick="OpenCollection" style="margin: 0 auto;">Открыть</SfButton>
+            }
+            else if (CardType == CollectionCardType.Delete)
+            {
+                <button class="delete-button e-btn e-small e-outline" @onclick="DeleteCollection">
+                    <i class="fa fa-trash"></i>
+                </button>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int CollectionId { get; set; }
+
+    [Parameter] public string CollectionName { get; set; }
+
+    [Parameter] public CollectionCardType CardType { get; set; }
+
+    private void OpenCollection()
+    {
+        // Логика для открытия страницы коллекции
+        NavigationManager.NavigateTo($"/collection/{CollectionId}");
+    }
+
+    private async Task DeleteCollection()
+    {
+        // Логика для удаления коллекции
+        var result = await api.DeleteCollection(CollectionId);
+        if (result.Result != ResultCode.Ok)
+        {
+            // обработка ошибки
+            await JSRuntime.InvokeVoidAsync("alert", "Ошибка при удалении коллекции");
+        }
+        else
+        {
+            NavigationManager.NavigateTo("/collections", true);
+        }
+    }
+}

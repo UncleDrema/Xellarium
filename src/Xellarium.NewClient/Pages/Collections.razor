@@ -1,6 +1,49 @@
 @page "/collections"
-<h3>Collections</h3>
+@using Xellarium.NewClient.Services
+@using Xellarium.Shared.DTO
+@using Xellarium.NewClient.Components
+@inject IApiAccess api
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger mt-3" role="alert">
+        @errorMessage
+    </div>
+}
+else if (collections == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <PageTitle>Коллекции</PageTitle>
+    <h2 class="text-center collections-title">Коллекции</h2>
+    <CardGrid>
+        @foreach (var collection in collections)
+        {
+            <CollectionCard CollectionName="@collection.Name"
+                            CardType="@CollectionCardType.Open"
+                            CollectionId="@collection.Id"></CollectionCard>
+        }
+    </CardGrid>
+}
 
 @code {
+    public string errorMessage = string.Empty;
     
+    public CollectionDTO[]? collections;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        var (resultCode, colls) = await api.GetAvailableCollections();
+        if (resultCode == ResultCode.Ok && colls != null)
+        {
+            collections = colls.ToArray();
+            errorMessage = string.Empty;
+        }
+        else
+        {
+            errorMessage = "Failed to get public collections";
+        }
+    }
 }
