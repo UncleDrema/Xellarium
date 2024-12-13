@@ -12,9 +12,9 @@ from reportlab.lib.pagesizes import letter, A4
 from reportlab.platypus import Paragraph, Spacer, Image, SimpleDocTemplate
 
 AB_PATH = r"k:\Programs\Apache\Apache24\bin\ab.exe"
-API_PATHS = ["http://localhost/api/v1/user/neighborhood", "http://localhost/api/v2/authentication/is-token-valid"]
-REQUEST_COUNT = 10000
-CONCURRENCY_LEVEL = 500
+API_PATHS = ["http://localhost:5001/api/v1/user/neighborhood", "http://localhost:5001/api/v2/authentication/is-token-valid"]
+REQUEST_COUNT = 1000
+CONCURRENCY_LEVEL = 50
 RESULTS_DIR = "results"
 PDF_REPORT = f"load_test_report_{REQUEST_COUNT}n_{CONCURRENCY_LEVEL}c.pdf"
 
