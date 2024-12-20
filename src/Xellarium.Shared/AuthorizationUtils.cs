@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using System.Text.Json;
 using Xellarium.Shared.DTO;
+using Xellarium.Tracing;
 
 namespace Xellarium.Shared;
 
@@ -8,6 +9,7 @@ public static class AuthorizationUtils
 {
     public static AuthenticatedUserDTO ParseJwt(string jwt)
     {
+        using var activity = XellariumTracing.StartActivity();
         var payload = jwt.Split('.')[1];
         var jsonBytes = ParseBase64WithoutPadding(payload);
         var parsedClaims = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonBytes)!;
@@ -22,6 +24,7 @@ public static class AuthorizationUtils
 
     private static byte[] ParseBase64WithoutPadding(string base64)
     {
+        using var activity = XellariumTracing.StartActivity();
         switch (base64.Length % 4)
         {
             case 2: base64 += "=="; break;

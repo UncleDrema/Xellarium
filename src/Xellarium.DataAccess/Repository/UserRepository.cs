@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Xellarium.BusinessLogic.Models;
 using Xellarium.BusinessLogic.Repository;
 using Xellarium.DataAccess.Models;
+using Xellarium.Tracing;
 
 namespace Xellarium.DataAccess.Repository;
 
@@ -11,7 +12,7 @@ public class UserRepository(XellariumContext context, ILogger logger)
 {
     public async Task<User?> GetByName(string name)
     {
-        // do not include deleted rules and collections
+        using var activity = XellariumTracing.StartActivity();
         return await _context.Users
             .Where(e => !e.IsDeleted)
             .Include(u => u.Collections.Where(e => !e.IsDeleted))
@@ -21,6 +22,7 @@ public class UserRepository(XellariumContext context, ILogger logger)
     
     public async Task<IEnumerable<User>> GetAllInclude()
     {
+        using var activity = XellariumTracing.StartActivity();
         return await _context.Users
             .Where(e => !e.IsDeleted)
             .Include(u => u.Collections.Where(e => !e.IsDeleted))
@@ -30,6 +32,7 @@ public class UserRepository(XellariumContext context, ILogger logger)
     
     public async Task<IEnumerable<User>> GetAllByIdsInclude(IEnumerable<int> ids)
     {
+        using var activity = XellariumTracing.StartActivity();
         return await _context.Users
             .Where(e => !e.IsDeleted)
             .Include(u => u.Collections.Where(e => !e.IsDeleted))
@@ -40,6 +43,7 @@ public class UserRepository(XellariumContext context, ILogger logger)
     
     public async Task<User?> GetInclude(int id)
     {
+        using var activity = XellariumTracing.StartActivity();
         return await _context.Users
             .Where(e => !e.IsDeleted)
             .Include(u => u.Collections.Where(e => !e.IsDeleted))

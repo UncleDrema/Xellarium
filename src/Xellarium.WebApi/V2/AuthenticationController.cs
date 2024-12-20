@@ -1,4 +1,5 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+﻿using System.Diagnostics;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Asp.Versioning;
@@ -13,6 +14,7 @@ using Xellarium.Authentication;
 using Xellarium.BusinessLogic.Models;
 using Xellarium.BusinessLogic.Services;
 using Xellarium.Shared.DTO;
+using Xellarium.Tracing;
 
 namespace Xellarium.WebApi.V2;
 
@@ -32,6 +34,7 @@ public class AuthenticationController(IAuthenticationService _service, IMapper m
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<RegisteredUserDTO>> Register(UserRegisterDTO userLoginDto)
     {
+        using var activity = XellariumTracing.StartActivity();
         var (name, password) = (userLoginDto.Username, userLoginDto.Password);
         if (await _userService.UserExists(name))
         {
@@ -59,6 +62,7 @@ public class AuthenticationController(IAuthenticationService _service, IMapper m
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<AuthenticatedTokenDTO>> Login(UserLoginDTO userLoginDto)
     {
+        using var activity = XellariumTracing.StartActivity();
         var (name, password, twoFactorCode) = (userLoginDto.Username, userLoginDto.Password, userLoginDto.TwoFactorCode);
         var user = await _service.AuthenticateUser(name, password);
         if (user == null)
@@ -89,6 +93,7 @@ public class AuthenticationController(IAuthenticationService _service, IMapper m
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> ChangePassword(ChangePasswordDTO changePasswordDto)
     {
+        using var activity = XellariumTracing.StartActivity();
         var (name, currentPassword, newPassword, twoFactorCode) = (Name: changePasswordDto.Username, changePasswordDto.CurrentPassword, changePasswordDto.NewPassword, changePasswordDto.TwoFactorCode);
         var user = await _service.AuthenticateUser(name, currentPassword);
         if (user == null)
@@ -114,6 +119,7 @@ public class AuthenticationController(IAuthenticationService _service, IMapper m
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> VerifyTwoFactorCode(VerifyTwoFactorRequestDTO verifyRequest)
     {
+        using var activity = XellariumTracing.StartActivity();
         var user = await _userService.GetUserByName(verifyRequest.UserName);
         if (user is null)
         {
@@ -134,6 +140,7 @@ public class AuthenticationController(IAuthenticationService _service, IMapper m
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> CheckTokenValid()
     {
+        using var activity = XellariumTracing.StartActivity();
         if (!HttpContext.TryGetAuthenticatedUser(out var authUser))
         {
             return Unauthorized();
@@ -144,6 +151,7 @@ public class AuthenticationController(IAuthenticationService _service, IMapper m
 
     private string CreateAccessToken(User user, TimeSpan expiration)
     {
+        using var activity = XellariumTracing.StartActivity();
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
@@ -170,18 +178,21 @@ public class AuthenticationController(IAuthenticationService _service, IMapper m
     
     private string GenerateTwoFactorSecret()
     {
+        using var activity = XellariumTracing.StartActivity();
         var key = KeyGeneration.GenerateRandomKey(20);  // Генерация случайного ключа
         return Base32Encoding.ToString(key);            // Кодирование ключа в формат Base32
     }
     
     private bool VerifyTwoFactorCode(string code, string secret)
     {
+        using var activity = XellariumTracing.StartActivity();
         var totp = new Totp(Base32Encoding.ToBytes(secret));  // Инициализация с использованием секретного ключа
         return totp.VerifyTotp(code, out long timeStepMatched, new VerificationWindow(2, 2)); // Проверка с небольшим допуском
     }
     
     private string GenerateQrCodeUri(string username, string secret)
     {
+        using var activity = XellariumTracing.StartActivity();
         return $"otpauth://totp/{username}?secret={secret}&issuer=Xellarium";
     }
 }

@@ -1,4 +1,6 @@
-﻿using Xellarium.BusinessLogic.Models;
+﻿using System.Diagnostics;
+using Xellarium.BusinessLogic.Models;
+using Xellarium.Tracing;
 
 namespace Xellarium.BusinessLogic.Services;
 
@@ -6,6 +8,7 @@ public class AuthenticationService(IUserService userService) : IAuthenticationSe
 {
     public async Task<User> RegisterUser(string name, string password, string? twoFactorSecret)
     {
+        using var activity = XellariumTracing.StartActivity();
         if (await userService.UserExists(name)) throw new ArgumentException("User already exists");
         if (string.IsNullOrWhiteSpace(password)) throw new ArgumentException("Password is empty");
         
@@ -16,6 +19,7 @@ public class AuthenticationService(IUserService userService) : IAuthenticationSe
 
     public async Task<User?> AuthenticateUser(string name, string password)
     {
+        using var activity = XellariumTracing.StartActivity();
         var user = await userService.GetUserByName(name);
         if (user == null)
         {
@@ -32,6 +36,7 @@ public class AuthenticationService(IUserService userService) : IAuthenticationSe
     
     public async Task ChangePassword(string name, string currentPassword, string newPassword)
     {
+        using var activity = XellariumTracing.StartActivity();
         var user = await userService.GetUserByName(name);
         if (user == null) throw new ArgumentException("User not found");
         if (!VerifyPassword(currentPassword, user.PasswordHash)) throw new ArgumentException("Wrong password");
@@ -42,11 +47,13 @@ public class AuthenticationService(IUserService userService) : IAuthenticationSe
 
     public string HashPassword(string password)
     {
+        using var activity = XellariumTracing.StartActivity();
         return BCrypt.Net.BCrypt.HashPassword(password);
     }
 
     public bool VerifyPassword(string password, string passwordHash)
     {
+        using var activity = XellariumTracing.StartActivity();
         return BCrypt.Net.BCrypt.Verify(password, passwordHash);
     }
 }

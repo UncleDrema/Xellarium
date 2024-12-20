@@ -18,6 +18,7 @@ using Xellarium.DataAccess.Repository;
 using Xellarium.Shared;
 using Xellarium.WebApi.V1;
 using OpenTelemetry;
+using OpenTelemetry.Exporter;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -87,7 +88,10 @@ public static class КProgram
         builder.Logging.AddOpenTelemetry(options =>
         {
             options.IncludeScopes = true;
-            options.AddConsoleExporter();
+            options.AddOtlpExporter(otlpOptions =>
+            {
+                otlpOptions.Endpoint = new Uri("http://localhost/logs");
+            });
             options.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("Xellarium"));
         });
         builder.Host.UseSerilog(logger);
@@ -96,13 +100,23 @@ public static class КProgram
             .ConfigureResource(resource => resource.AddService("Xellarium"))
             .WithTracing(tracing => tracing
                 .AddAspNetCoreInstrumentation()
-                .AddZipkinExporter(options =>
+                .AddHttpClientInstrumentation()
+                .AddEntityFrameworkCoreInstrumentation()
+                .AddSource("Xellarium.*")
+                .AddOtlpExporter(options =>
                 {
-                    options.Endpoint = new Uri("http://localhost:9411/api/v2/spans");
+                    options.Endpoint = new Uri("http://localhost:4317");
                 }))
-            .WithMetrics(metrics => metrics
-                .AddAspNetCoreInstrumentation()
-                .AddConsoleExporter());
+            .WithMetrics(metrics =>
+            {
+                metrics.AddAspNetCoreInstrumentation();
+                metrics.AddHttpClientInstrumentation();
+                metrics.AddRuntimeInstrumentation();
+                metrics.AddProcessInstrumentation();
+                metrics.AddPrometheusExporter();
+            });
+        
+        builder.Services.AddSingleton(TracerProvider.Default.GetTracer("Xellarium"));
 
         // Add services to the container.
         builder.ConfigureDatabase();
@@ -208,6 +222,8 @@ public static class КProgram
            context.Response.Headers.Add("Server", "Xellarium");
            await next.Invoke();
         });
+
+        app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
         await app.RunAsync();
     }

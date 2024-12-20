@@ -1,4 +1,6 @@
-﻿namespace Xellarium.BusinessLogic.Models;
+﻿using Xellarium.Tracing;
+
+namespace Xellarium.BusinessLogic.Models;
 
 /**
  * Коллекция
@@ -17,6 +19,7 @@ public class Collection : BaseModel
     
     public void AddRule(Rule rule)
     {
+        using var activity = XellariumTracing.StartActivity();
         ArgumentNullException.ThrowIfNull(rule);
         Rules.Add(rule);
         rule.Collections.Add(this);
@@ -24,6 +27,7 @@ public class Collection : BaseModel
     
     public void RemoveRule(Rule rule)
     {
+        using var activity = XellariumTracing.StartActivity();
         ArgumentNullException.ThrowIfNull(rule);
         if (!Rules.Contains(rule))
             throw new InvalidOperationException($"Rule {rule.Name} is not in collection {Name}.");

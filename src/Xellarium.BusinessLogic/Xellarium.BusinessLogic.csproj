@@ -16,5 +16,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Xellarium.Shared\Xellarium.Shared.csproj" />
+      <ProjectReference Include="..\Xellarium.Tracing\Xellarium.Tracing.csproj" />
     </ItemGroup>
 </Project>

@@ -1,4 +1,6 @@
-﻿namespace Xellarium.BusinessLogic.Models;
+﻿using Xellarium.Tracing;
+
+namespace Xellarium.BusinessLogic.Models;
 
 /**
  * Базовая модель для всех моделей
@@ -14,6 +16,7 @@ public abstract class BaseModel
 
     public void MarkCreated()
     {
+        using var activity = XellariumTracing.StartActivity();
         if (CreatedAt != default(DateTime))
             throw new InvalidOperationException("Entity is already marked created");
         CreatedAt = DateTime.UtcNow;
@@ -21,11 +24,13 @@ public abstract class BaseModel
 
     public void MarkUpdated()
     {
+        using var activity = XellariumTracing.StartActivity();
         UpdatedAt = DateTime.UtcNow;
     }
     
     public void Delete()
     {
+        using var activity = XellariumTracing.StartActivity();
         if (IsDeleted)
             throw new InvalidOperationException("Cannot delete a deleted entity.");
         IsDeleted = true;

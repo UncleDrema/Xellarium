@@ -1,4 +1,5 @@
 ﻿using Xellarium.Shared;
+using Xellarium.Tracing;
 
 namespace Xellarium.BusinessLogic.Models;
 /**
@@ -18,6 +19,7 @@ public class User : BaseModel
     
     public void AddWarning()
     {
+        using var activity = XellariumTracing.StartActivity();
         WarningsCount++;
         if (WarningsCount >= 3)
         {
@@ -27,6 +29,7 @@ public class User : BaseModel
     
     public void RemoveWarning()
     {
+        using var activity = XellariumTracing.StartActivity();
         if (WarningsCount == 0)
         {
             throw new InvalidOperationException("No warnings to remove");
@@ -40,6 +43,7 @@ public class User : BaseModel
 
     public void AddCollection(Collection collection)
     {
+        using var activity = XellariumTracing.StartActivity();
         ArgumentNullException.ThrowIfNull(collection, nameof(collection));
         collection.Owner = this;
         Collections.Add(collection);
@@ -47,6 +51,7 @@ public class User : BaseModel
 
     public void AddRule(Rule rule)
     {
+        using var activity = XellariumTracing.StartActivity();
         ArgumentNullException.ThrowIfNull(rule, nameof(rule));
         rule.Owner = this;
         Rules.Add(rule);

@@ -21,6 +21,7 @@
       <ProjectReference Include="..\Xellarium.Authentication\Xellarium.Authentication.csproj" />
       <ProjectReference Include="..\Xellarium.BusinessLogic\Xellarium.BusinessLogic.csproj" />
       <ProjectReference Include="..\Xellarium.Shared\Xellarium.Shared.csproj" />
+      <ProjectReference Include="..\Xellarium.Tracing\Xellarium.Tracing.csproj" />
     </ItemGroup>
 
 </Project>

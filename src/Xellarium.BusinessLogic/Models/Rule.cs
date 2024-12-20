@@ -1,4 +1,5 @@
 ﻿using Xellarium.Shared;
+using Xellarium.Tracing;
 
 namespace Xellarium.BusinessLogic.Models;
 
@@ -22,6 +23,7 @@ public class Rule : BaseModel
 
     public World NextState(World w, IList<Vec2> offsets, int times = 1)
     {
+        using var activity = XellariumTracing.StartActivity();
         if (times < 1)
             throw new ArgumentOutOfRangeException(nameof(times), times, "Times should be greater than 0");
         ArgumentNullException.ThrowIfNull(w);
